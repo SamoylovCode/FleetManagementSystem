@@ -1,0 +1,57 @@
+﻿@model SidebarViewModel
+
+<menu >
+	<ul class="nav flex-column">
+		<li class="nav-item">
+			<a class="nav-link active" asp-controller="" asp-action="">Автопарк</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link active" asp-controller="" asp-action="">Путевой лист</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link active" asp-controller="" asp-action="">Водители</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link active" asp-controller="" asp-action="">Тех. состояние</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link active" asp-controller="" asp-action="">ТОиР</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link active" asp-controller="" asp-action="">ГСМ</a>
+		</li>
+	</ul>
+	<hr/>
+	<ul class="nav flex-column">
+		<li class="nav-item">
+			@Model.UserName
+		</li>
+		<li class="nav-item">
+			@Model.UserRole
+		</li>
+		<li class="nav-item">
+			@Model.CompanyId
+		</li>
+		<li class="nav-item">
+			<a class="nav-link active" asp-controller="" asp-action="">Пользователи</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link active" asp-controller="" asp-action="">Организация</a>
+		</li>
+		<hr class="my-1" />
+		<li class="nav-item">
+			<form method="post" asp-controller="Account" asp-action="Logout">
+				<button type="submit" class="nav-link btn btn-link py-0">
+					Выйти
+				</button>
+			</form>
+		</li>
+	</ul>
+</menu>
+<h2>Claim details</h2>
+<ul>
+	@foreach (var claim in User.Claims)
+ 	{
+ 		<li><strong>@claim.Type</strong>: @claim.Value</li>
+ 	}
+</ul>

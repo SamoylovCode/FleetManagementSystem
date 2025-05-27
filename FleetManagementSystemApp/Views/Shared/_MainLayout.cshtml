@@ -1,0 +1,23 @@
+﻿@model PartialPageModel
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	@await Html.PartialAsync("_MetaPartial")
+	@await Html.PartialAsync("_CssPartial")
+</head>
+<body>
+	<h1>Main page</h1>
+	<vc:sidebar/>
+	<main role="main">
+		@RenderBody()
+		<vc:modal title="Загрузка..."/>
+		@* @await Html.PartialAsync(Model.PartialViewName, Model.ViewModel) *@
+		<button onclick="loadModal('Регистрация сотрудника', 'Admin/AddUserToCompany')">
+			Зарегистрировать сотрудника
+		</button>
+	</main>
+
+	@await Html.PartialAsync("_ScriptsPartial")
+</body>
+</html>

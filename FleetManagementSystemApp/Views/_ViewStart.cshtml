@@ -1,0 +1,8 @@
+﻿@if (!signInManager.IsSignedIn(User))
+{
+    Layout = "_AuthLayout";
+}
+else
+{
+    Layout = "_MainLayout";
+}

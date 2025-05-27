@@ -1,0 +1,87 @@
+﻿@model RegisterViewModel
+
+@{
+	ViewData["Title"] = "Регистрация";
+}
+
+<h1>@ViewData["Title"]</h1>
+<form asp-controller="Account" asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
+	@Html.AntiForgeryToken()
+
+	<div asp-validation-summary="All"></div>
+	<label asp-for="Email"></label>
+	<input name="Email" asp-for="Email" />
+	<span asp-validation-for="Email" class="text-danger"></span>
+
+	<label asp-for="FirstName"></label>
+	<input name="FirstName" asp-for="FirstName" />
+	<span asp-validation-for="FirstName" class="text-danger"></span>
+
+	<label asp-for="MiddleName"></label>
+	<input name="MiddleName" asp-for="MiddleName" />
+	<span asp-validation-for="MiddleName" class="text-danger"></span>
+
+	<label asp-for="LastName"></label>
+	<input name="LastName" asp-for="LastName" />
+	<span asp-validation-for="LastName" class="text-danger"></span>
+
+	<label asp-for="Password"></label>
+	<input name="Password" asp-for="Password" type="password" />
+	<span asp-validation-for="Password" class="text-danger"></span>
+
+	<label asp-for="PasswordConfirm"></label>
+	<input name="PasswordConfirm" asp-for="PasswordConfirm" type="password" />
+	<span asp-validation-for="PasswordConfirm" class="text-danger"></span>
+
+	<label asp-for="CompanyName"></label>
+	<input name="CompanyName" asp-for="CompanyName" />
+	<span asp-validation-for="CompanyName" class="text-danger"></span>
+
+	<label asp-for="PhoneNum"></label>
+	<input name="PhoneNum" asp-for="PhoneNum" />
+	<span asp-validation-for="PhoneNum" class="text-danger"></span>
+
+	<label asp-for="Region"></label>
+	<input name="Region" asp-for="Region" />
+	<span asp-validation-for="Region" class="text-danger"></span>
+
+	<label asp-for="City"></label>
+	<input name="City" asp-for="City" />
+	<span asp-validation-for="City" class="text-danger"></span>
+
+	<label asp-for="Street"></label>
+	<input name="Street" asp-for="Street" />
+	<span asp-validation-for="Street" class="text-danger"></span>
+
+	<label asp-for="House"></label>
+	<input name="House" asp-for="House" />
+	<span asp-validation-for="House" class="text-danger"></span>
+
+	<label asp-for="Building"></label>
+	<input name="Building" asp-for="Building" />
+	<span asp-validation-for="Building" class="text-danger"></span>
+
+	<label asp-for="Apartment"></label>
+	<input name="Apartment" asp-for="Apartment" />
+	<span asp-validation-for="Apartment" class="text-danger"></span>
+
+	<label asp-for="Inn"></label>
+	<input name="Inn" asp-for="Inn" />
+	<span asp-validation-for="Inn" class="text-danger"></span>
+
+	<label asp-for="Kpp"></label>
+	<input name="Kpp" asp-for="Kpp" />
+	<span asp-validation-for="Kpp" class="text-danger"></span>
+
+	<label asp-for="Ogrn"></label>
+	<input name="Ogrn" asp-for="Ogrn" />
+	<span asp-validation-for="Ogrn" class="text-danger"></span>
+
+	<label asp-for="Okpo"></label>
+	<input name="Okpo" asp-for="Okpo" />
+	<span asp-validation-for="Okpo" class="text-danger"></span>
+	<br />
+	<button type="submit">Зарегистрироваться</button>
+</form>
+<p>Есть учетная запись? </>
+<a asp-controller="Account" asp-action="Login">Войти</a></p>
