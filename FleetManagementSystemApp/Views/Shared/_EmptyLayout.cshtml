@@ -1,4 +1,8 @@
-﻿@model PartialPageModel
+﻿@* _EmptyLayout.cshtml (used for pages without PartialPageModel) *@
+@{
+    var layoutName = Layout;
+    <text><!-- Using layout: @layoutName --></text>
+}
 
 <!DOCTYPE html>
 <html lang="ru">
@@ -7,6 +11,6 @@
     @await Html.PartialAsync("_CssPartial")
 </head>
 <body>
-    @await Html.PartialAsync(Model.PartialViewName, Model.ViewModel)
+    @RenderBody()
 </body>
 </html>

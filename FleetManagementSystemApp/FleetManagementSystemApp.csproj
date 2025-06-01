@@ -60,6 +60,8 @@
     <Folder Include="ClientApp\" />
     <Folder Include="Data\Enums\" />
     <Folder Include="Data\Repositories\EntityFramework\" />
+    <Folder Include="Views\Admin\Partials\" />
+    <Folder Include="Views\Home\" />
   </ItemGroup>
 
   <ItemGroup>

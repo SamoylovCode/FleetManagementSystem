@@ -1,6 +1,9 @@
-﻿namespace FleetManagementSystemApp.Business.Services.Abstract;
+﻿using FleetManagementSystemApp.Data.Entities;
+using Microsoft.AspNetCore.Identity;
+
+namespace FleetManagementSystemApp.Business.Services.Abstract;
 
 public interface IConfirmationService
 {
-    public Task<bool> ConfirmAsync(string userId, string token);
+    public Task<IdentityResult> SendConfirmationAsync(ApplicationUser user, string scheme);
 }

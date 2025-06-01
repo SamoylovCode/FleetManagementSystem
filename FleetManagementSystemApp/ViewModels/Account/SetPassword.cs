@@ -5,7 +5,11 @@ namespace FleetManagementSystemApp.ViewModels.Account;
 
 public class SetPassword
 {
+    [Required]
     public string UserId { get; set; } = string.Empty;
+
+    [Required]
+    public string Token { get; set; }
 
     [Required(ErrorMessage = "Не указан пароль")]
     [DataType(DataType.Password)]

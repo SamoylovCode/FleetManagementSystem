@@ -1,8 +1,15 @@
-﻿@if (!signInManager.IsSignedIn(User))
-{
-    Layout = "_AuthLayout";
-}
-else
-{
-    Layout = "_MainLayout";
+﻿@using Microsoft.AspNetCore.Identity
+@using FleetManagementSystemApp.Data.Entities
+
+@{
+    // Получаем SignInManager напрямую из контейнера сервисов
+    var signInManager = Context.RequestServices
+        .GetService<SignInManager<ApplicationUser>>();
+
+    // Защита от null и проверка авторизации
+    var isSignedIn = signInManager != null && signInManager.IsSignedIn(User);
+
+    Layout = isSignedIn
+        ? "_MainLayout"
+        : "_AuthLayout";
 }

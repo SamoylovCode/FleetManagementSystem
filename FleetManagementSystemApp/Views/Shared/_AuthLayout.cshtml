@@ -1,4 +1,10 @@
-﻿<!DOCTYPE html>
+﻿@{
+	ViewData["Title"] = "Страница входа, регистрации";
+}
+
+@ViewData["Title"]
+
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 	@await Html.PartialAsync("_MetaPartial")
@@ -11,7 +17,7 @@
 			<div class="col">
 				@* <img src="~/images/default.jpg" class="img-fluid" alt="" /> *@
 			</div>
-			<button onclick="fillForm()" class="btn btn-sm btn-secondary">Заполнить тестовые данные</button>
+			@* <button onclick="fillForm()" class="btn btn-sm btn-secondary">Заполнить тестовые данные</button> *@
 			<div class="col">
 				@RenderBody()
 			</div>
@@ -19,7 +25,7 @@
 	</div>
 
 	@await Html.PartialAsync("_ScriptsPartial")
-	<script>
+	<!-- <script>
 		function fillForm() {
 			const fields = {
 				'Email': 'test10@example.com',
@@ -50,12 +56,12 @@
 			});
 		}
 
-		// Пытаемся заполнить сразу и при изменениях DOM
+		Пытаемся заполнить сразу и при изменениях DOM
 		fillForm();
 		new MutationObserver(fillForm).observe(document.body, {
 			childList: true,
 			subtree: true
 		});
-	</script>
+	</script> -->
 </body>
 </html>

@@ -1,0 +1,54 @@
+﻿@model List<ApplicationUserDto>
+
+@{
+    Layout = "_MainLayout";
+    ViewData["Title"] = "Сотрудники компании";
+}
+
+<h1>@ViewData["Title"]</h1>
+<h5>Содержимое страницы Admin/Employees</h5>
+
+<button onclick="loadModal('Добавить сотрудника', '/Admin/AddUserPartial')">
+	Зарегистрировать сотрудника
+</button>
+
+<table>
+	<thead>
+		<tr>
+            <th>#</th>
+            <th>Фамилия</th>
+            <th>Имя</th>
+            <th>Отчество</th>
+            <th>Email</th>
+            <th>Роль</th>
+		</tr>
+	</thead>
+	<tbody>
+		@{
+			int counter = 1;
+			foreach(var u in Model)
+			{
+				<tr>
+					<td>@(counter++)</td>
+					<td>@u.LastName</td>
+					<td>@u.FirstName</td>
+					<td>@u.MiddleName</td>
+					<td>@u.Email</td>
+				</tr>
+			}
+		}
+	</tbody>
+</table>
+
+<script>
+	$.ajax({
+		url: '/api/save-data',
+		method: 'POST',
+		success: function(response) {
+			showSuccessToast('Данные сохранены!');
+		},
+		error: function(xhr) {
+			showErrorToast('Ошибка: ' + xhr.responseText);
+		}
+	});
+</script>

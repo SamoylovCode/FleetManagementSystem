@@ -5,9 +5,9 @@
 
 <h2 style="text-align:center; margin-top: 30px;">Регистрация завершена</h2>
 <p style="text-align:center;">Сейчас вы будете перенаправлены на главную страницу...</p>
-
+<p>Если автоматическое перенаправление не произошло, нажмите следующую ссылку: <a asp-action="Login" asp-controller="Account"></a></p>
 <script>
     setTimeout(function () {
-        window.location.href = "/";
+        window.location.href = "/Account/Login";
     }, 3000);
 </script>

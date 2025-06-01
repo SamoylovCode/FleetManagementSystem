@@ -1,4 +1,5 @@
-﻿@model PartialPageModel
+﻿@* _MainLayout.cshtml (used for internal pages where PartialPageModel is required) *@
+@model object
 
 <!DOCTYPE html>
 <html lang="ru">
@@ -10,14 +11,9 @@
 	<h1>Main page</h1>
 	<vc:sidebar/>
 	<main role="main">
-		@RenderBody()
 		<vc:modal title="Загрузка..."/>
-		@* @await Html.PartialAsync(Model.PartialViewName, Model.ViewModel) *@
-		<button onclick="loadModal('Регистрация сотрудника', 'Admin/AddUserToCompany')">
-			Зарегистрировать сотрудника
-		</button>
+		@RenderBody()
 	</main>
-
 	@await Html.PartialAsync("_ScriptsPartial")
 </body>
 </html>

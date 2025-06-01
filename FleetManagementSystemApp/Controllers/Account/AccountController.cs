@@ -7,6 +7,7 @@ using FleetManagementSystemApp.ViewModels.Account;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Collections.Generic;
 using System.Net;
 
@@ -43,7 +44,7 @@ public class AccountController : Controller
     public IActionResult Login(string returnUrl)
     {
         ViewData["ReturnUrl"] = returnUrl; //Get from URL-query
-        return View("~/Views/Account/_LoginPartial.cshtml");
+        return PartialView("_LoginPartial");
     }
 
     [HttpPost]
@@ -51,7 +52,7 @@ public class AccountController : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View("~/Views/Account/_LoginPartial.cshtml", model);
+            return PartialView("_LoginPartial", model);
         }
 
         var loginResult = await _userService.LoginUserAsync(model);
@@ -64,10 +65,10 @@ public class AccountController : Controller
         if (!string.IsNullOrEmpty(returnUrl) && !Url.IsLocalUrl(returnUrl))
         {
             // TODO: _logger.LogWarning($"Попытка перенаправления на внешний URL: {returnUrl}");
-            returnUrl = "/";
+            returnUrl = "/Autopark/Vehicles";
         }
 
-        return LocalRedirect(returnUrl ?? "/");
+        return RedirectToAction("Vehicles", "Autopark");
     }
 
     [HttpPost]
@@ -82,7 +83,7 @@ public class AccountController : Controller
     {
         ViewData["ReturnUrl"] = returnUrl; //Get from URL-query
 
-        return View("~/Views/Account/_RegisterPartial.cshtml");
+        return PartialView("_RegisterPartial");
     }
 
     [HttpPost]
@@ -90,7 +91,7 @@ public class AccountController : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View("~/Views/Account/_RegisterPartial.cshtml", model);
+            return PartialView("_RegisterPartial", model);
         }
 
         var registerResult = await _userService.CreateUserAsync(model, Request.Scheme);
@@ -103,46 +104,46 @@ public class AccountController : Controller
         if (!string.IsNullOrEmpty(returnUrl) && !Url.IsLocalUrl(returnUrl))
         {
             // TODO: _logger.LogWarning($"Попытка перенаправления на внешний URL: {returnUrl}");
-            returnUrl = "/";
+            returnUrl = "Autopark/Vehicles";
         }
 
-        return LocalRedirect(returnUrl ?? "/");
+        return RedirectToAction("Vehicles", "Autopark");
     }
 
     [HttpGet]
     public async Task<IActionResult> Confirm(string userId, string token)
     {
-        var hasPassword = await _confirmationService.ConfirmAsync(userId, token);
-
-        if (hasPassword)
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
         {
-            return View("~/Views/Account/ConfirmEmailSuccess.cshtml");
+            ModelState.AddModelError("", errorMessage: $"Пользователь с таким ID {userId} не найден");
+            return View("ConfirmEmailFailed");
         }
-        
-        return RedirectToAction("SetPasswordForm", new { userId });
 
-        //var model = new PartialPageModel
-        //{
-        //    PartialViewName = "_SetPasswordPartial",
-        //    ViewModel = new SetPassword { UserId = userId }
-        //};
+        if (!await _userManager.HasPasswordAsync(user))
+        {
+            return RedirectToAction("SetPasswordForm", new { userId, token });
+        }
 
-        //return View("_EmptyLayout", model);
+        var confirmResult = await _userManager.ConfirmEmailAsync(user, token);
+        if (!confirmResult.Succeeded)
+        {
+            ModelState.AddModelError("", confirmResult.Errors.First().Description);
+            return View("ConfirmEmailFailed");
+        }
 
-        //return View("~/Views/Account/ConfirmEmailSuccess.cshtml");
+        await _signInManager.SignInAsync(user, isPersistent: true);
+        return View("ConfirmEmailSuccess");
     }
 
     [HttpGet]
-    public IActionResult SetPasswordForm(string userId)
+    public IActionResult SetPasswordForm(string userId, string token)
     {
-        var model = new PartialPageModel
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
         {
-            PartialViewName = "_SetPasswordPartial",
-            ViewModel = new SetPassword { UserId = userId }
-        };
-
-        return View("_EmptyLayout", model);
-        //return View("SetPassword", new SetPassword { UserId = userId });
+            return BadRequest($"Пользователем с ID '{userId}' или токен не указаны");
+        }
+        return View("SetPassword", new SetPassword { UserId = userId, Token = token });
     }
 
     [HttpPost]
@@ -150,27 +151,27 @@ public class AccountController : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View("_EmptyLayout", new PartialPageModel
-            {
-                PartialViewName = "_SetPasswordPartial",
-                ViewModel = model
-            });
+            return View("SetPassword", model);
         }
 
         var result = await _userService.SetPasswordAsync(model);
         if (!result.Succeeded)
         {
-            return BadRequest(result.Errors);
+            foreach (var e in result.Errors)
+            {
+                ModelState.AddModelError("", e.Description);
+            }
+            return View("SetPassword", model);
         }
 
-        return RedirectToAction("Login", "Account");
+        return View("ConfirmEmailSuccess");
     }
 
-    //[HttpGet]
-    //public async Task<IActionResult> AccessDenied()
-    //{
-    //    return View();
-    //}
+    [HttpGet]
+    public IActionResult AccessDenied()
+    {
+        return View();
+    }
 
     //[HttpPost]
     //public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)

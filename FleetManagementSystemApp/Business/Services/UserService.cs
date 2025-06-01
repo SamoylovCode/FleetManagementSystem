@@ -22,6 +22,7 @@ public class UserService : IUserService
     private readonly IEmailSender _emailSender;
     private readonly IHttpContextAccessor _contextAccessor;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IConfirmationService _confirmationEmailService;
     private readonly LinkGenerator _linkGenerator;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
@@ -40,7 +41,8 @@ public class UserService : IUserService
                        SignInManager<ApplicationUser> signInManager,
                        ICurrentUserService currentUserService,
                        IEmailSender emailSender,
-                       LinkGenerator linkGenerator)
+                       LinkGenerator linkGenerator,
+                       IConfirmationService confirmationEmailService)
     {
         _userMapper = userDto;
         _userManager = userManager;
@@ -54,6 +56,7 @@ public class UserService : IUserService
         _currentUserService = currentUserService;
         _emailSender = emailSender;
         _linkGenerator = linkGenerator;
+        _confirmationEmailService = confirmationEmailService;
     }
 
     private async Task<List<Claim>> CreateUserClaims(ApplicationUser user, string role)
@@ -172,77 +175,54 @@ public class UserService : IUserService
 
     public async ValueTask<IdentityResult> AddUserAsync(AddUserViewModel model, string scheme)
     {
-        using(var transaction = _dbContext.Database.BeginTransaction())
+        var currentUserCompanyId = _currentUserService.CompanyId;
+        if (string.IsNullOrEmpty(currentUserCompanyId))
         {
-            var currentUserCompanyId = _currentUserService.CompanyId;
-            if (string.IsNullOrEmpty(currentUserCompanyId))
+            ArgumentException.ThrowIfNullOrWhiteSpace(nameof(currentUserCompanyId));
+        }
+
+        var user = new ApplicationUser
+        {
+            Email = model.Email,
+            UserName = model.Email, // The username is the same as the email value.
+            FirstName = model.FirstName,
+            MiddleName = model.MiddleName,
+            LastName = model.LastName,
+            CompanyId = Guid.Parse(currentUserCompanyId), // Applying admin's CompanyId
+            CreatedAt = DateTime.UtcNow // Registration date, set current time
+        };
+
+        await using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+        {
+            try
             {
-                ArgumentException.ThrowIfNullOrWhiteSpace(nameof(currentUserCompanyId));
+                var exectuteUserCreationResult = await ExecuteUserCreationAsync(user, null, model.Role);
+                if (!exectuteUserCreationResult.Succeeded)
+                {
+                    return IdentityResult.Failed(new IdentityError
+                    {
+                        Description = "Операция создания пользователя не удалась."
+                    });
+                }
             }
-
-            var user = new ApplicationUser
-            {
-                Email = model.Email,
-                UserName = model.Email, // The username is the same as the email value.
-                FirstName = model.FirstName,
-                MiddleName = model.MiddleName,
-                LastName = model.LastName,
-                CompanyId = Guid.Parse(currentUserCompanyId), // Applying admin's CompanyId
-                CreatedAt = DateTime.UtcNow // Registration date, set current time
-            };
-
-            // TODO: EmailConfirmed service
-
-            // Validation of params using FluentValidation
-            var validator = _serviceProvider.GetRequiredService<IValidator<(ApplicationUser addUser, string? password, string? role)>>();
-            var validationResult = await validator.ValidateAsync((user, null, model.Role));
-            if (!validationResult.IsValid)
-            {
-                return IdentityResult.Failed(
-                    validationResult.Errors
-                    .Select(e => new IdentityError { Description = e.ErrorMessage })
-                    .ToArray()
-                );
-            }
-
-            var creatingResult = await _userManager.CreateAsync(user);
-            if (!creatingResult.Succeeded)
-            {
-                return IdentityResult.Failed(creatingResult.Errors.ToArray());
-            }
-
-            var addRoleResult = await _userManager.AddToRoleAsync(user, model.Role);
-            if (!addRoleResult.Succeeded)
+            catch (Exception e)
             {
                 await transaction.RollbackAsync();
-                return IdentityResult.Failed(new IdentityError
-                {
-                    Description = "Не удалось применить роль к пользователю."
-                });
+                throw new Exception("Ошибка при добавлении сотрудника" + e.Message);
             }
 
-            var claims = await CreateUserClaims(user, model.Role);
-            var addClaimsResult = await _userManager.AddClaimsAsync(user, claims);
-            if (!addClaimsResult.Succeeded)
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+
+        var confirmEmailResult = await _confirmationEmailService.SendConfirmationAsync(user, scheme);
+
+        if (!confirmEmailResult.Succeeded)
+        {
+            return IdentityResult.Failed(new IdentityError
             {
-                await transaction.RollbackAsync();
-                return IdentityResult.Failed(new IdentityError
-                {
-                    Description = "Не удалось применить утверждения к пользователю."
-                });
-            }
-
-            var confirmEmailResult = await SendConfirmationEmailAsync(user, scheme);
-
-            if (!confirmEmailResult.Succeeded)
-            {
-                await transaction.RollbackAsync();
-                return IdentityResult.Failed(new IdentityError
-                {
-                    Description = "Не удалось отправить письмо с подтверждением регистрации."
-                });
-            }
-            transaction.Commit();
+                Description = "Не удалось отправить письмо с подтверждением регистрации."
+            });
         }
 
         return IdentityResult.Success;
@@ -250,102 +230,121 @@ public class UserService : IUserService
 
     public async ValueTask<IdentityResult> CreateUserAsync(RegisterViewModel model, string scheme)
     {
-        using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+        var company = new Company
         {
-            var company = new Company
-            {
-                CompanyId = Guid.NewGuid(),
-                CompanyName = model.CompanyName,
-                PhoneNum = model.PhoneNum,
-                Inn = model.Inn,
-                Kpp = model?.Kpp,
-                Ogrn = model?.Ogrn,
-                Okpo = model?.Okpo,
-                IsMain = true
-            };
+            CompanyId = Guid.NewGuid(),
+            CompanyName = model.CompanyName,
+            PhoneNum = model.PhoneNum,
+            Inn = model.Inn,
+            Kpp = model?.Kpp,
+            Ogrn = model?.Ogrn,
+            Okpo = model?.Okpo,
+            IsMain = true
+        };
 
-            var address = new Address
-            {
-                CompanyId = company.CompanyId,
-                Region = model.Region,
-                City = model.City,
-                Street = model.Street,
-                House = model.House,
-                Building = model?.Building,
-                Apartment = model?.Apartment
-            };
+        var address = new Address
+        {
+            CompanyId = company.CompanyId,
+            Region = model.Region,
+            City = model.City,
+            Street = model.Street,
+            House = model.House,
+            Building = model?.Building,
+            Apartment = model?.Apartment
+        };
 
-            var user = new ApplicationUser
-            {
-                Email = model.Email,
-                UserName = model.Email, //The username is the same as the email value.
-                FirstName = model.FirstName,
-                MiddleName = model.MiddleName,
-                LastName = model.LastName,
-                CompanyId = company.CompanyId,
-                CreatedAt = DateTime.UtcNow //Registration date, set current time
-            };
+        var user = new ApplicationUser
+        {
+            Email = model.Email,
+            UserName = model.Email, //The username is the same as the email value.
+            FirstName = model.FirstName,
+            MiddleName = model.MiddleName,
+            LastName = model.LastName,
+            CompanyId = company.CompanyId,
+            CreatedAt = DateTime.UtcNow //Registration date, set current time
+        };
 
-            // Validation of params using FluentValidation
-            var validator = _serviceProvider.GetRequiredService<IValidator<(ApplicationUser addUser, string? password, string? role)>>();
-            var validationResult = await _validator.ValidateAsync((user, model.Password, ApplicationRole.Admin));
-            if (!validationResult.IsValid)
+        await using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+        {
+            try
             {
-                return IdentityResult.Failed(
-                    validationResult.Errors
-                    .Select(e => new IdentityError { Description = e.ErrorMessage })
-                    .ToArray()
-                );
+                _dbContext.Companies.Add(company);
+                _dbContext.Addresses.Add(address);
+
+                var executeUserCreationResult = await ExecuteUserCreationAsync(user, model.Password, ApplicationRole.Admin);
+                if (!executeUserCreationResult.Succeeded)
+                {
+                    return IdentityResult.Failed(new IdentityError
+                    {
+                        Description = "Операцию создания пользователя не удалось выполнить."
+                    });
+                }
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
             }
-            
-            _dbContext.Companies.Add(company);
-            _dbContext.Addresses.Add(address);
-            await _dbContext.SaveChangesAsync();
-
-            var createResult = await _userManager.CreateAsync(user, model.Password);
-
-            if (!createResult.Succeeded)
+            catch (Exception e)
             {
                 await transaction.RollbackAsync();
-                return IdentityResult.Failed(new IdentityError
-                {
-                    Description = "Не удалось создать пользователя."
-                });
+                throw new Exception("Ошибка при регистрации пользователя: " + e.Message);
             }
+        }
 
-            var addRoleResult = await _userManager.AddToRoleAsync(user, ApplicationRole.Admin);
-            if (!addRoleResult.Succeeded)
+        var confirmEmailResult = await _confirmationEmailService.SendConfirmationAsync(user, scheme);
+
+        if (!confirmEmailResult.Succeeded)
+        {
+            return IdentityResult.Failed(new IdentityError
             {
-                await transaction.RollbackAsync();
-                return IdentityResult.Failed(new IdentityError
-                {
-                    Description = "Не удалось применить роль к пользователю."
-                });
-            }
+                Description = "Не удалось отправить письмо с подтверждением регистрации."
+            });
+        }
 
-            var claims = await CreateUserClaims(user, null);
-            var addClaimsResult = await _userManager.AddClaimsAsync(user, claims);
-            if (!addClaimsResult.Succeeded)
+        return IdentityResult.Success;
+    }
+
+    private async Task<IdentityResult> ExecuteUserCreationAsync(ApplicationUser user, string? password, string role)
+    {
+        // Validation of params using FluentValidation
+        var validator = _serviceProvider.GetRequiredService<IValidator<(ApplicationUser user, string? password, string role)>>();
+        var validationResult = await _validator.ValidateAsync((user, password, role));
+        if (!validationResult.IsValid)
+        {
+            return IdentityResult.Failed(
+                validationResult.Errors
+                .Select(e => new IdentityError { Description = e.ErrorMessage })
+                .ToArray()
+            );
+        }
+        var createResult = string.IsNullOrEmpty(password)
+            ? await _userManager.CreateAsync(user)
+            : await _userManager.CreateAsync(user, password);
+
+        if (!createResult.Succeeded)
+        {
+            return IdentityResult.Failed(new IdentityError
             {
-                await transaction.RollbackAsync();
-                return IdentityResult.Failed(new IdentityError
-                {
-                    Description = "Не удалось применить утверждения к пользователю."
-                });
-            }
+                Description = "Не удалось создать пользователя."
+            });
+        }
 
-            var confirmEmailResult = await SendConfirmationEmailAsync(user, scheme);
-
-            if (!confirmEmailResult.Succeeded)
+        var addRoleResult = await _userManager.AddToRoleAsync(user, role);
+        if (!addRoleResult.Succeeded)
+        {
+            return IdentityResult.Failed(new IdentityError
             {
-                await transaction.RollbackAsync();
-                return IdentityResult.Failed(new IdentityError
-                {
-                    Description = "Не удалось отправить письмо с подтверждением регистрации."
-                });
-            }
+                Description = "Не удалось применить роль к пользователю."
+            });
+        }
 
-            await transaction.CommitAsync();
+        var claims = await CreateUserClaims(user, role);
+        var addClaimsResult = await _userManager.AddClaimsAsync(user, claims);
+        if (!addClaimsResult.Succeeded)
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Description = "Не удалось применить утверждения к пользователю."
+            });
         }
 
         return IdentityResult.Success;
@@ -353,54 +352,49 @@ public class UserService : IUserService
 
     public async ValueTask<IdentityResult> SetPasswordAsync(SetPassword model)
     {
-        var user = await _userManager.FindByIdAsync(model.UserId);
-        if (user == null)
+        await using(var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
-            return IdentityResult.Failed(new IdentityError
+            try
             {
-                Description = $"Пользователь с ID '{model.UserId}' не найден."
-            });
-        }
+                var user = await _userManager.FindByIdAsync(model.UserId);
+                if (user == null)
+                {
+                    return IdentityResult.Failed(new IdentityError
+                    {
+                        Description = $"Пользователь с ID '{model.UserId}' не найден."
+                    });
+                }
 
-        var result = await _userManager.AddPasswordAsync(user, model.Password);
-        if (!result.Succeeded)
-        {
-            return IdentityResult.Failed(new IdentityError
+                var emailConfirmed = await _userManager.ConfirmEmailAsync(user, model.Token);
+                if (!emailConfirmed.Succeeded)
+                {
+                    return emailConfirmed;
+                    //return IdentityResult.Failed(new IdentityError
+                    //{
+                    //    Description = $"Не удалось отметить электронную почту пользователя с ID '{model.UserId}' как подтвержденную."
+                    //});
+                }
+
+                var resultAddPassword = await _userManager.AddPasswordAsync(user, model.Password);
+                if (!resultAddPassword.Succeeded)
+                {
+                    return IdentityResult.Failed(new IdentityError
+                    {
+                        Description = "Не удалось сохранить пароль существующей учетной записи пользователя."
+                    });
+                }
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception)
             {
-                Description = "Не удалось сохранить пароль сущствующей учетной записи пользователя."
-            });
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         return IdentityResult.Success;
-    }
-
-    // TODO: вынести в отдельный сервис!
-    public async ValueTask<IdentityResult> SendConfirmationEmailAsync(ApplicationUser user, string scheme)
-    {
-        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        if(_contextAccessor.HttpContext is null)
-        {
-            throw new Exception("HttpContext не содержит информации о текущем запросе.");
-        }
-        var callbackUrl = _linkGenerator.GetUriByAction(
-            httpContext: _contextAccessor.HttpContext,
-            action: "Confirm",
-            controller: "Account",
-            values: new { userId = user.Id, token },
-            scheme: scheme);
-
-        var subject = "Подтверждение регистрации";
-        var body = $"<p>Для подтверждения регистрации перейдите по <a href=\"{callbackUrl}\">ссылке</a>.</p>";
-
-        try
-        {
-            await _emailSender.SendEmailAsync(user.Email!, subject, body);
-            return IdentityResult.Success;
-        }
-        catch (Exception e)
-        {
-            throw new InvalidOperationException("Письмо не отправлено.", e);
-        }
     }
 
     //public async ValueTask<IdentityResult> UpdateUserDataAsync(UpdateUserDataViewModel model)

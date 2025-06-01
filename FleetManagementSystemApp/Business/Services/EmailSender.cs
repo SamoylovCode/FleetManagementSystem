@@ -16,13 +16,6 @@ public class EmailSender : IEmailSender
         _emailSettings = configuration.GetSection("EmailSettings").Get<EmailSettings>();
         _username = Environment.GetEnvironmentVariable("MAILTRAP_USERNAME");
         _password = Environment.GetEnvironmentVariable("MAILTRAP_PASSWORD");
-
-        //foreach (System.Collections.DictionaryEntry env in Environment.GetEnvironmentVariables())
-        //{
-        //    Console.WriteLine($"{env.Key} = {env.Value}");
-        //}
-        //Console.WriteLine($"MAILTRAP_USERNAME = {_username ?? "NULL"}");
-        //Console.WriteLine($"MAILTRAP_PASSWORD = {_password ?? "NULL"}");
     }
 
     public async Task SendEmailAsync(string toEmail, string subject, string body)
@@ -45,6 +38,7 @@ public class EmailSender : IEmailSender
         }
         catch (Exception e)
         {
+            //TODO: Do logger
             Console.WriteLine("Ошибка при отправке письма: " + e.Message);
             throw;
         }

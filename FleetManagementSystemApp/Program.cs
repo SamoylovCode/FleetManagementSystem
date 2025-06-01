@@ -6,6 +6,8 @@ using FleetManagementSystemApp.Data;
 using FleetManagementSystemApp.Data.Entities;
 using FleetManagementSystemApp.Validators;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -53,16 +55,25 @@ builder.Services.AddScoped<AddressDtoExtentions>();
 builder.Services.AddScoped<CompanyDtoExtenctions>();
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.AddTransient<IConfirmationService, ConfirmationEmailService>();
+// Configuring DataProtection key storage; change this in production!
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\keys\"))
+    .SetApplicationName("FleetManagementSystem");
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "fmsAuth";
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only
-    options.Cookie.SameSite = SameSiteMode.Strict; // Protection from CSRF
+    options.Cookie.SameSite = SameSiteMode.Lax; // Protection from CSRF
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/AccessDenied";
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(1440);
+    options.ExpireTimeSpan = TimeSpan.FromDays(1);
     options.SlidingExpiration = true;
+});
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.CheckConsentNeeded = context => false;
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllersWithViews(options =>
@@ -81,6 +92,8 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminRolePolicy", policy => policy.RequireRole("Admin"));
 });
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 StartupChecks.ValidateRequiredSettings(builder.Configuration); //Validation environment variables, etc.
 
@@ -112,7 +125,7 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Account}/{action=Login}/{id?}");
+    pattern: "{controller=Autopark}/{action=Vehicles}/{id?}");
 
 app.MapControllers();
 app.MapRazorPages();

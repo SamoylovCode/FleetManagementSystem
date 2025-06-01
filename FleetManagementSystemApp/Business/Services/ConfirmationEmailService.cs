@@ -2,41 +2,58 @@
 using FleetManagementSystemApp.Data;
 using FleetManagementSystemApp.Data.Entities;
 using Microsoft.AspNetCore.Identity;
+using System.Net;
 
 namespace FleetManagementSystemApp.Business.Services;
 
 public class ConfirmationEmailService : IConfirmationService
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IHttpContextAccessor _contextAccessor;
+    private readonly IEmailSender _emailSender;
+    private readonly LinkGenerator _linkGenerator;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public ConfirmationEmailService(UserManager<ApplicationUser> userManager,
                                     ApplicationDbContext dbContext,
-                                    SignInManager<ApplicationUser> signInManager)
+                                    SignInManager<ApplicationUser> signInManager,
+                                    IHttpContextAccessor contextAccessor,
+                                    LinkGenerator linkGenerator,
+                                    IEmailSender emailSender)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _contextAccessor = contextAccessor;
+        _linkGenerator = linkGenerator;
+        _emailSender = emailSender;
     }
 
-    public async Task<bool> ConfirmAsync(string userId, string token)
+    public async Task<IdentityResult> SendConfirmationAsync(ApplicationUser user, string scheme)
     {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        if (_contextAccessor.HttpContext is null)
         {
-            throw new Exception("$\"Пользователь с ID '{userId}' не найден.\"");
+            throw new Exception("HttpContext не содержит информации о текущем запросе.");
         }
+        var callbackUrl = _linkGenerator.GetUriByAction(
+            httpContext: _contextAccessor.HttpContext,
+            action: "Confirm",
+            controller: "Account",
+            values: new { userId = user.Id, token },
+            scheme: scheme);
 
-        var confirmationResult = await _userManager.ConfirmEmailAsync(user, token);
-        if (!confirmationResult.Succeeded)
+        var subject = "Подтверждение регистрации";
+        var body = $"<p>Для подтверждения регистрации перейдите по <a href=\"{callbackUrl}\">ссылке</a>.</p>";
+
+        try
         {
-            throw new Exception("Не удалось отправить письмо с подтверждением регистрации.");
+            await _emailSender.SendEmailAsync(user.Email!, subject, body);
         }
-
-        if (await _userManager.HasPasswordAsync(user))
+        catch (Exception e)
         {
-            await _signInManager.SignInAsync(user, isPersistent: true);
+            throw new InvalidOperationException("Письмо не отправлено.", e);
         }
-
-        return false;
+        
+        return IdentityResult.Success;
     }
 }

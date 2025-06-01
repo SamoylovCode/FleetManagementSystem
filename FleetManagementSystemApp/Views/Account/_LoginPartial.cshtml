@@ -1,6 +1,7 @@
 ﻿@model LoginViewModel
 
 @{
+	Layout = "_AuthLayout";
 	ViewData["Title"] = "Войти в учетную запись";
 }
 
@@ -18,8 +19,10 @@
 	<input name="Password" asp-for="Password" type="password" />
 	<span asp-validation-for="Password" class="text-danger"></span>
 
-	<input name="RememberMe" asp-for="RememberMe" type="checkbox" />
-	<label asp-for="RememberMe">Запомнить меня</label>
+	<div class="form-check">
+		<input asp-for="RememberMe" class="form-check-input" />
+		<label asp-for="RememberMe" class="form-check-label">Запомнить меня</label>
+	</div>
 
 	<a asp-controller="Account" asp-action="ResetPassword">Забыли пароль?</a>
 	<br />

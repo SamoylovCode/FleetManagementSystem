@@ -1,4 +1,6 @@
-﻿using FleetManagementSystemApp.Business.Services.Abstract;
+﻿using FleetManagementSystemApp.Business.Dtos;
+using FleetManagementSystemApp.Business.Services.Abstract;
+using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Data.Entities;
 using FleetManagementSystemApp.ViewModels;
 using FleetManagementSystemApp.ViewModels.Admin;
@@ -19,7 +21,21 @@ public class AdminController : Controller
     }
 
     [HttpGet]
-    public IActionResult AddUserToCompany()
+    public async Task<IActionResult> Employees()
+    {
+        var employees = await _userService.GetAllUsersListAsync();
+        return View(employees.Value); // модель — List<ApplicationUserDto>
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> CompanyInfo()
+    {
+        //var company = await _companyService.GetCompanyInfoAsync();
+        return View(); // модель — CompanyDto или аналог
+    }
+
+    [HttpGet]
+    public IActionResult AddUserPartial()
     {
         ViewBag.RoleList = new SelectList(
             items: ApplicationRole.AllRoles.Select(x => new { Value = x.Key, Text = x.Value }),
@@ -31,7 +47,7 @@ public class AdminController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddUserToCompany(AddUserViewModel model)
+    public async Task<IActionResult> AddUserPartial(AddUserViewModel model)
     {
         if (!ModelState.IsValid)
         {
@@ -41,21 +57,18 @@ public class AdminController : Controller
                 dataTextField: "Text"
             );
 
-            return View("Index", new PartialPageModel
-            {
-                PartialViewName = "_AddUserPartial",
-                ViewModel = model
-            });
+            return PartialView("_AddUserPartial", model);
         }
 
         var addUserResult = await _userService.AddUserAsync(model, Request.Scheme);
         if (!addUserResult.Succeeded)
         {
-            return BadRequest(addUserResult.Errors);
+            ModelState.AddModelError("", addUserResult.Errors.First().Description);
+            return PartialView("_AddUserPartial", model);
         }
 
         TempData["ShowToast"] = "Сотрудник успешно добавлен";
-        return RedirectToAction("AddUserToCompany");
+        return Json(new { success = true });
     }
 
     //[HttpPatch]
