@@ -2,6 +2,7 @@
 using FleetManagementSystemApp.Configs;
 using MimeKit;
 using FleetManagementSystemApp.Business.Services.Abstract;
+using FleetManagementSystemApp.Common;
 
 namespace FleetManagementSystemApp.Business.Services;
 
@@ -42,6 +43,5 @@ public class EmailSender : IEmailSender
             Console.WriteLine("Ошибка при отправке письма: " + e.Message);
             throw;
         }
-
     }
 }

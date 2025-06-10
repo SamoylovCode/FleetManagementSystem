@@ -32,7 +32,7 @@ public abstract class BaseMapper<TModel, TDto>
     public Result<List<TDto>> ToDto(List<TModel> models)
     {
         List<TDto> result = new List<TDto>();
-        List<string> errors = new List<string>();
+        List<Error> errors = new List<Error>();
 
         foreach (var model in models)
         {
@@ -49,7 +49,7 @@ public abstract class BaseMapper<TModel, TDto>
 
         return errors.Count == 0
             ? Result<List<TDto>>.Success(result)
-            : Result<List<TDto>>.Failure($"Ошибки при преобразовании данных в коллекцию DTO: {string.Join("; ", errors)}");
+            : Result<List<TDto>>.Failure(errors);
     }
 
     /// <summary>
@@ -58,16 +58,15 @@ public abstract class BaseMapper<TModel, TDto>
     /// <param name="models">The models.</param>
     /// <param name="Dtos">The DTOs.</param>
     /// <returns></returns>
-    public Result<List<TModel>> MapFromDto(List<TModel> models,
-        List<TDto> Dtos)
+    public Result<List<TModel>> MapFromDto(List<TModel> models, List<TDto> Dtos)
     {
         if (models.Count != Dtos.Count)
         {
-            return Result<List<TModel>>.Failure("Размеры коллекций List<TModel> и List<TDto> не совпадают");
+            return Result<List<TModel>>.Failure(new Error("Dto.DoNotMatchSizes", "Размеры коллекций List<TModel> и List<TDto> не совпадают"));
         }
 
         List<TModel> result = new List<TModel>();
-        List<string> errors = new List<string>();
+        List<Error> errors = new List<Error>();
 
         for (int i = 0; i < models.Count; i++)
         {
@@ -78,12 +77,12 @@ public abstract class BaseMapper<TModel, TDto>
             }
             else
             {
-                errors.Add($"Index {i}: {mapResult.Error}");
+                errors.Add(mapResult.Error);
             }
         }
 
         return errors.Count == 0
             ? Result<List<TModel>>.Success(result)
-            : Result<List<TModel>>.Failure($"Ошибки при преобразовании коллекции данных из DTO: {string.Join("; ", errors)}");
+            : Result<List<TModel>>.Failure(errors);
     }
 }

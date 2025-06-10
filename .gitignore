@@ -399,12 +399,11 @@ FodyWeavers.xsd
 */.idea
 .idea/
 
-# MoneyProject
-backend/Money.Api/appsettings.Development.json
-
 # Sensitive Data
 .env
 *.key
 *.pem
 secrets.json
+appsettings.json
+appsettings.Development.json
 appsettings.Production.json

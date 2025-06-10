@@ -4,6 +4,8 @@ using FleetManagementSystemApp.Business.Services.Abstract;
 using FleetManagementSystemApp.Configs;
 using FleetManagementSystemApp.Data;
 using FleetManagementSystemApp.Data.Entities;
+using FleetManagementSystemApp.Logging;
+using FleetManagementSystemApp.Middleware;
 using FleetManagementSystemApp.Validators;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -11,10 +13,31 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddHttpContextAccessor();
+builder.Logging.ClearProviders();
+builder.Host.UseSerilog((ctx, services, lc) =>
+{
+    lc.ReadFrom.Configuration(ctx.Configuration)
+      .Enrich.FromLogContext()
+      .Enrich.WithMachineName()
+      .Enrich.WithEnvironmentName()
+      .Enrich.WithThreadId()
+      .Enrich.WithCorrelationId()
+      .Enrich.With(new UserIdEnricher(services.GetRequiredService<IHttpContextAccessor>()));
+
+    if (ctx.HostingEnvironment.IsDevelopment())
+    {
+        lc.WriteTo.Console();
+    }
+});
+
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -44,6 +67,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+builder.Services.AddSingleton<ILogEventEnricher, UserIdEnricher>();
 builder.Services.AddOptions<EmailSettings>()
                 .Bind(builder.Configuration.GetSection("EmailSettings"))
                 .ValidateDataAnnotations()
@@ -75,7 +99,6 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.CheckConsentNeeded = context => false;
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute())
     );
@@ -92,8 +115,6 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminRolePolicy", policy => policy.RequireRole("Admin"));
 });
-builder.Logging.AddConsole();
-builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 StartupChecks.ValidateRequiredSettings(builder.Configuration); //Validation environment variables, etc.
 
@@ -102,6 +123,29 @@ StartupChecks.ValidateRequiredSettings(builder.Configuration); //Validation envi
 WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseStaticFiles();
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        var userAgent = httpContext.Request.Headers["User-Agent"].ToString();
+        diagnosticContext.Set("UserAgent", userAgent);
+
+        var remoteIp = httpContext.Connection.RemoteIpAddress?.ToString();
+        diagnosticContext.Set("RemoteIpAddress", remoteIp);
+    };
+    options.GetLevel = (httpContext, elapsed, exception) =>
+    {
+        if (exception != null || httpContext.Response.StatusCode >= 500)
+            return LogEventLevel.Error;
+        if (httpContext.Response.StatusCode >= 400)
+            return LogEventLevel.Warning;
+        return LogEventLevel.Information;
+    };
+});
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -117,7 +161,6 @@ else
 
 // Only in this sequence: UseRouting() -> UseAuthentication() -> UseAuthorization()
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 app.UseRouting();
 app.UseCookiePolicy();
 app.UseAuthentication();

@@ -455,6 +455,11 @@
             <typeparam name="T">Type of methods</typeparam>
             <typeparam name="TKey">Type of parameters</typeparam>
         </member>
+        <member name="T:FleetManagementSystemApp.Filters.ServiceResultFilter">
+            <summary>
+            Автоматическая обертка каждого экшена
+            </summary>
+        </member>
         <member name="T:FleetManagementSystemApp.Validators.UserCreationValidator">
             <summary>
             Validation rules for creating users

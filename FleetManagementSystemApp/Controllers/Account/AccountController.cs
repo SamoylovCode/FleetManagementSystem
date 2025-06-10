@@ -26,11 +26,11 @@ public class AccountController : Controller
     public string ReturnUrl { get; set; }
 
     public AccountController(UserManager<ApplicationUser> userManager,
-                             SignInManager<ApplicationUser> signInManager,
-                             ApplicationDbContext context,
-                             RoleManager<IdentityRole> userRole,
-                             IUserService userService,
-                             IConfirmationService confirmationService)
+        SignInManager<ApplicationUser> signInManager,
+        ApplicationDbContext context,
+        RoleManager<IdentityRole> userRole,
+        IUserService userService,
+        IConfirmationService confirmationService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -141,7 +141,7 @@ public class AccountController : Controller
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
         {
-            return BadRequest($"Пользователем с ID '{userId}' или токен не указаны");
+            return BadRequest($"Пользователем '{userId}' или токен не указаны.");
         }
         return View("SetPassword", new SetPassword { UserId = userId, Token = token });
     }

@@ -28,11 +28,11 @@ public class UserCreationValidator : AbstractValidator<(ApplicationUser user, st
             RuleFor(x => x.password).NotEmpty().WithMessage("Не указан пароль.");
         });
         RuleFor(x => x.role).NotEmpty().WithMessage("Не указана роль.")
-                            .MustAsync(async (role, _) => await _roleManager.RoleExistsAsync(role))
-                            .WithMessage("Указанная роль не существует.");
+            .MustAsync(async (role, _) => await _roleManager.RoleExistsAsync(role))
+                .WithMessage("Указанная роль не существует.");
         RuleFor(x => x.user.Email).EmailAddress().WithMessage("Некорректный формат адреса электронной почты.")
-                                  .NotEmpty().WithMessage("Укажите адрес эектронной почты.")
-                                  .MustAsync(async (email, _) => await _userManager.FindByEmailAsync(email) is null)
-                                  .WithMessage("Пользователь с указанным адресом электронной почты уже существует.");
+            .NotEmpty().WithMessage("Укажите адрес эектронной почты.")
+            .MustAsync(async (email, _) => await _userManager.FindByEmailAsync(email) is null)
+                .WithMessage("Пользователь с указанным адресом электронной почты уже существует.");
     }
 }

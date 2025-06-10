@@ -1,6 +1,7 @@
 ﻿using FleetManagementSystemApp.Business.Dtos;
 using FleetManagementSystemApp.Business.Dtos.DtoExtensions;
 using FleetManagementSystemApp.Business.Services.Abstract;
+using FleetManagementSystemApp.Business.Services.Errors;
 using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Data;
 using FleetManagementSystemApp.Data.Entities;
@@ -10,7 +11,9 @@ using FleetManagementSystemApp.ViewModels.Admin;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using System.Security.Claims;
+using ILogger = Serilog.ILogger;
 
 namespace FleetManagementSystemApp.Business.Services;
 
@@ -19,65 +22,61 @@ public class UserService : IUserService
     private readonly ApplicationDbContext _dbContext;
     private readonly ApplicationUserDtoExtentions _userMapper;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IEmailSender _emailSender;
-    private readonly IHttpContextAccessor _contextAccessor;
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfirmationService _confirmationEmailService;
-    private readonly LinkGenerator _linkGenerator;
-    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly ILogger _logger;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UserCreationValidator _validator;
     private readonly UserLoginValidator _loginValidator;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public UserService(ApplicationUserDtoExtentions userDto,
-                       UserManager<ApplicationUser> userManager,
-                       RoleManager<IdentityRole> roleManager,
-                       UserCreationValidator validator,
-                       IServiceProvider serviceProvider,
-                       ApplicationDbContext dbContext,
-                       IHttpContextAccessor contextAccessor,
-                       UserLoginValidator loginValidator,
-                       SignInManager<ApplicationUser> signInManager,
-                       ICurrentUserService currentUserService,
-                       IEmailSender emailSender,
-                       LinkGenerator linkGenerator,
-                       IConfirmationService confirmationEmailService)
+        UserManager<ApplicationUser> userManager,
+        UserCreationValidator validator,
+        IServiceProvider serviceProvider,
+        ApplicationDbContext dbContext,
+        UserLoginValidator loginValidator,
+        SignInManager<ApplicationUser> signInManager,
+        ICurrentUserService currentUserService,
+        IConfirmationService confirmationEmailService)
     {
         _userMapper = userDto;
         _userManager = userManager;
-        _roleManager = roleManager;
         _validator = validator;
         _serviceProvider = serviceProvider;
         _dbContext = dbContext;
-        _contextAccessor = contextAccessor;
         _loginValidator = loginValidator;
         _signInManager = signInManager;
         _currentUserService = currentUserService;
-        _emailSender = emailSender;
-        _linkGenerator = linkGenerator;
         _confirmationEmailService = confirmationEmailService;
+        _logger = Log.ForContext<UserService>();
     }
 
     private async Task<List<Claim>> CreateUserClaims(ApplicationUser user, string role)
     {
+        _logger.Information("Создание claims для учетной записи пользователя.");
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.GivenName, $"{user.LastName} {user.FirstName} {user.MiddleName}".Trim()),
             new Claim("CompanyId", user.CompanyId.ToString())
         };
 
-        if (!string.IsNullOrEmpty(role))
+        if (string.IsNullOrEmpty(role))
         {
-            var userRoles = await _userManager.GetRolesAsync(user);
-            userRoles = userRoles.Append(role).Distinct().ToList();
-
-            foreach(var userRole in userRoles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, userRole));
-            }
+            _logger.Warning("Роль не указана при создании claims.");
         }
 
+        _logger.Information("Получение списка ролей пользователя {TargetUserId}", user.Id);
+        var userRoles = await _userManager.GetRolesAsync(user);
+        userRoles = userRoles.Append(role).Distinct().ToList();
+
+        foreach(var userRole in userRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, userRole));
+            _logger.Information("Добавлена роль {Role} к созданным claims.", userRole);
+        }
+
+        _logger.Debug("Claims успешно созданы.");
         return claims;
     }
 
@@ -97,88 +96,126 @@ public class UserService : IUserService
     public async ValueTask<Result<List<ApplicationUserDto>>> GetAllUsersListAsync()
     {
         var companyId = _currentUserService.CompanyId;
+        _logger.Information("Получение списка пользователей компании {CompanyId}.", companyId);
         if (string.IsNullOrEmpty(companyId))
         {
-            return Result<List<ApplicationUserDto>>.Failure("Не содержится сведений об организации пользователя, совершающего запрос.");
+            _logger.Warning("Контекст не содержит данных об организации.");
+            return Result<List<ApplicationUserDto>>.Failure(UserServiceErrors.CompanyNotFound(null));
         }
         var users = await _userManager.Users
             .Where(u => u.CompanyId == Guid.Parse(companyId))
             .AsNoTracking()
             .ToListAsync();
 
-        return users is not null
-            ? _userMapper.ToDto(users)
-            : Result<List<ApplicationUserDto>>.Failure("В базе данных не содержится ни одного пользователя.");
+        if(users.Count > 0)
+        {
+            _logger.Information("Возвращен список из {UsersCount} пользователей организации {CompanyId}.", users.Count, companyId);
+            return _userMapper.ToDto(users);
+        }
+        else
+        {
+            _logger.Warning("Cписок пользователей организации {CompanyId} пуст.", companyId);
+            return Result<List<ApplicationUserDto>>.Failure(UserServiceErrors.CompanyHasNoEmployees(companyId));
+        }
     }
 
-    public async ValueTask<Result<ApplicationUserDto>> GetUserByIdAsync(string id)
+    public async ValueTask<Result<ApplicationUserDto>> GetUserByIdAsync(string userId)
     {
-        if (string.IsNullOrWhiteSpace(id))
+        _logger.Information("Получение пользователя {TargetUserId}.", userId);
+        if (string.IsNullOrWhiteSpace(userId))
         {
-            return Result<ApplicationUserDto>.Failure("ID пользователя не указан.");
+            _logger.Warning("ID пользователя не указан.");
+            return Result<ApplicationUserDto>.Failure(UserServiceErrors.UserIdIsNullOrEmpty());
         }
 
-        var user = await _userManager.FindByIdAsync(id);
+        var user = await _userManager.FindByIdAsync(userId);
 
-        return user is not null
-            ? _userMapper.ToDto(user)
-            : Result<ApplicationUserDto>.Failure("Пользователь не найден.");
+        if(user is not null)
+        {
+            _logger.Information("Пользователь {TargetUserId} найден, возвращен объект ApplicationUserDto.", userId);
+            return _userMapper.ToDto(user);
+        }
+        else
+        {
+            _logger.Warning("Пользователь {TargetUserId} не найден.", userId);
+            return Result<ApplicationUserDto>.Failure(UserServiceErrors.UserNotFound(userId));
+        }
     }
 
     public async ValueTask<Result<ApplicationUserDto>> GetUserByEmailAsync(string email)
     {
+        _logger.Information("Получение пользователя по Email.");
         if (string.IsNullOrWhiteSpace(email))
         {
-            return Result<ApplicationUserDto>.Failure("Email не указан.");
+            _logger.Warning("Email пользователя не указан.");
+            return Result<ApplicationUserDto>.Failure(UserServiceErrors.EmailIsNullOrEmpty());
         }
 
         var user = await _userManager.FindByEmailAsync(email);
 
-        return user is not null
-            ? _userMapper.ToDto(user)
-            : Result<ApplicationUserDto>.Failure("Указанный электронный адрес не привязан ни к одному пользователю.");
+        if(user is not null)
+        {
+            _logger.Information("Пользователь найден, возвращен объект ApplicationUserDto.");
+            return _userMapper.ToDto(user);
+        }
+        else
+        {
+            _logger.Warning("Пользователь не найден.");
+            return Result<ApplicationUserDto>.Failure(UserServiceErrors.EmailNotFound());
+        }
     }
 
     public async ValueTask<IdentityResult> LoginUserAsync(LoginViewModel model)
     {
+        _logger.Information("Вход пользователя.");
         var validationResult = _loginValidator.Validate(model);
         if (!validationResult.IsValid)
         {
+            _logger.Warning("Модель входа не прошла валидацию. Количество ошибок: {ErrorCount}. Поля с ошибками: {ErrorFields}",
+                validationResult.Errors.Count,
+                validationResult.Errors.Select(e => e.PropertyName).Distinct());
             return IdentityResult.Failed(
-                validationResult.Errors
-                .Select(e => new IdentityError { Description = e.ErrorMessage })
-                .ToArray()
-                );
+                validationResult.Errors.Select(e => new IdentityError {
+                    Description = e.ErrorMessage
+                }).ToArray());
         }
 
         var user = await _userManager.FindByEmailAsync(model.Email);
         if (user is null)
         {
+            _logger.Warning("Пользователь по указанному Email не найден.");
             return IdentityResult.Failed(new IdentityError
             {
-                Description = "Не удалось найти пользователя."
+                Description = UserServiceErrors.EmailNotFound().Description.ToString()
             });
         }
 
         var checkPassword = await _userManager.CheckPasswordAsync(user, model.Password);
         if (!checkPassword)
         {
+            _logger.Warning("Неудачная попытка входа (неверный пароль).");
             return IdentityResult.Failed(new IdentityError
             {
-                Description = "Неверный пароль."
+                Description = UserServiceErrors.PasswordDoesNotMatch(user.Id).Description.ToString()
             });
         }
         await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
 
+        _logger.Information("Пользователь {TargetUserId} совершил вход в систему.", user.Id);
         return IdentityResult.Success;
     }
 
     public async ValueTask<IdentityResult> AddUserAsync(AddUserViewModel model, string scheme)
     {
         var currentUserCompanyId = _currentUserService.CompanyId;
+        _logger.Information("Добавление сотрудника в организацию {CompanyId}", currentUserCompanyId);
         if (string.IsNullOrEmpty(currentUserCompanyId))
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(nameof(currentUserCompanyId));
+            _logger.Warning("Контекст не содержит данных об организации.");
+            return IdentityResult.Failed(new IdentityError
+            {
+                Description = UserServiceErrors.CompanyNotFound(null).Description.ToString()
+            });
         }
 
         var user = new ApplicationUser
@@ -194,42 +231,42 @@ public class UserService : IUserService
 
         await using (var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
-            try
+            _logger.Information("Регистрация пользователя.");
+            var exectuteUserCreationResult = await ExecuteUserCreationAsync(user, null, model.Role);
+            if (!exectuteUserCreationResult.Succeeded)
             {
-                var exectuteUserCreationResult = await ExecuteUserCreationAsync(user, null, model.Role);
-                if (!exectuteUserCreationResult.Succeeded)
-                {
-                    return IdentityResult.Failed(new IdentityError
-                    {
-                        Description = "Операция создания пользователя не удалась."
-                    });
-                }
-            }
-            catch (Exception e)
-            {
+                _logger.Error("Регистрация пользователя не удалась.", exectuteUserCreationResult.Errors.First().Description);
                 await transaction.RollbackAsync();
-                throw new Exception("Ошибка при добавлении сотрудника" + e.Message);
+                return IdentityResult.Failed(new IdentityError
+                {
+                    //Code = UserServiceErrors.UserCreationFailed().Code.ToString(),
+                    Description = UserServiceErrors.UserCreationFailed().Description.ToString()
+                });
             }
 
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
         }
 
+        _logger.Information("Отправка письма для подтверждения регистрации пользователя {TargetUserId}.", user.Id);
         var confirmEmailResult = await _confirmationEmailService.SendConfirmationAsync(user, scheme);
 
         if (!confirmEmailResult.Succeeded)
         {
+            _logger.Error("Отправка письма не удалась.");
             return IdentityResult.Failed(new IdentityError
             {
-                Description = "Не удалось отправить письмо с подтверждением регистрации."
+                Description = UserServiceErrors.SendEmailFailed(user.Id).Description.ToString()
             });
         }
 
+        _logger.Information("Пользователь в организацию {CompanyId} успешно добавлен.", currentUserCompanyId);
         return IdentityResult.Success;
     }
 
     public async ValueTask<IdentityResult> CreateUserAsync(RegisterViewModel model, string scheme)
     {
+        _logger.Information("Регистрации пользователя");
         var company = new Company
         {
             CompanyId = Guid.NewGuid(),
@@ -266,134 +303,161 @@ public class UserService : IUserService
 
         await using (var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
-            try
-            {
-                _dbContext.Companies.Add(company);
-                _dbContext.Addresses.Add(address);
+            _dbContext.Companies.Add(company);
+            _dbContext.Addresses.Add(address);
 
-                var executeUserCreationResult = await ExecuteUserCreationAsync(user, model.Password, ApplicationRole.Admin);
-                if (!executeUserCreationResult.Succeeded)
-                {
-                    return IdentityResult.Failed(new IdentityError
-                    {
-                        Description = "Операцию создания пользователя не удалось выполнить."
-                    });
-                }
-
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch (Exception e)
+            _logger.Information("Регистрация пользователя.");
+            var executeUserCreationResult = await ExecuteUserCreationAsync(user, model.Password, ApplicationRole.Admin);
+            if (!executeUserCreationResult.Succeeded)
             {
+                _logger.Error("Регистрация пользователя не удалась.");
                 await transaction.RollbackAsync();
-                throw new Exception("Ошибка при регистрации пользователя: " + e.Message);
+                return IdentityResult.Failed(new IdentityError
+                {
+                    Description = UserServiceErrors.UserCreationFailed().Description.ToString()
+                });
             }
+
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
 
+        _logger.Information("Отправка письма для подтверждения регистрации пользователя {TargetUserId}.", user.Id);
         var confirmEmailResult = await _confirmationEmailService.SendConfirmationAsync(user, scheme);
 
         if (!confirmEmailResult.Succeeded)
         {
+            _logger.Warning("Отправка письма не удалась.");
             return IdentityResult.Failed(new IdentityError
             {
-                Description = "Не удалось отправить письмо с подтверждением регистрации."
+                Description = UserServiceErrors.SendEmailFailed(user.Id).Description.ToString()
             });
         }
 
+        _logger.Information("Регистрация пользователя {TargetUserId} прошла успешно.", user.Id);
         return IdentityResult.Success;
     }
 
     private async Task<IdentityResult> ExecuteUserCreationAsync(ApplicationUser user, string? password, string role)
     {
-        // Validation of params using FluentValidation
+        _logger.Information("Выполнение операции регистрации пользователя.");
         var validator = _serviceProvider.GetRequiredService<IValidator<(ApplicationUser user, string? password, string role)>>();
         var validationResult = await _validator.ValidateAsync((user, password, role));
         if (!validationResult.IsValid)
         {
+            _logger.Warning("Модель входа не прошла валидацию. Количество ошибок: {ErrorCount}. Поля с ошибками: {ErrorFields}",
+                validationResult.Errors.Count,
+                validationResult.Errors.Select(e => e.PropertyName).Distinct());
             return IdentityResult.Failed(
-                validationResult.Errors
-                .Select(e => new IdentityError { Description = e.ErrorMessage })
-                .ToArray()
-            );
+                validationResult.Errors.Select(e => new IdentityError
+                {
+                    Description = e.ErrorMessage
+                }).ToArray());
         }
         var createResult = string.IsNullOrEmpty(password)
             ? await _userManager.CreateAsync(user)
             : await _userManager.CreateAsync(user, password);
+        _logger.Information("Попытка создания заданного пользователя.");
 
         if (!createResult.Succeeded)
         {
+            _logger.Error("Выполнение метода CreateAsync() завершилось ошибками: {Code}, {Description}",
+                createResult.Errors.Select(e => e.Code),
+                createResult.Errors.Select(e => e.Description));
             return IdentityResult.Failed(new IdentityError
             {
-                Description = "Не удалось создать пользователя."
+                Description = UserServiceErrors.UserCreationFailed().Description.ToString()
             });
         }
-
+        _logger.Information("Добавление роли пользователю {TargetUserId}", user.Id);
         var addRoleResult = await _userManager.AddToRoleAsync(user, role);
         if (!addRoleResult.Succeeded)
         {
+            _logger.Error("Добавление роли к учетной записи пользователя {TargetUserId} не удалось.", user.Id);
             return IdentityResult.Failed(new IdentityError
             {
-                Description = "Не удалось применить роль к пользователю."
+                Description = UserServiceErrors.AddToRoleFailed(user.Id).Description.ToString()
             });
         }
 
         var claims = await CreateUserClaims(user, role);
+        _logger.Information("Добавление созданных claims к учетной записи пользователя {TargetUserId}", user.Id);
         var addClaimsResult = await _userManager.AddClaimsAsync(user, claims);
         if (!addClaimsResult.Succeeded)
         {
+            _logger.Warning("Добавление claims к учетной записи пользователя {TargetUserId} не удалось", user.Id);
             return IdentityResult.Failed(new IdentityError
             {
-                Description = "Не удалось применить утверждения к пользователю."
+                Description = UserServiceErrors.AddClaimsFailed(user.Id).Description.ToString()
             });
         }
 
+        _logger.Information("Операция регистрации пользователя успешно завершена.");
         return IdentityResult.Success;
     }
 
     public async ValueTask<IdentityResult> SetPasswordAsync(SetPassword model)
     {
+        _logger.Information("Установка пароля к учетной записи пользователя");
         await using(var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
             try
             {
-                var user = await _userManager.FindByIdAsync(model.UserId);
-                if (user == null)
+                if(model.UserId is null)
                 {
+                    _logger.Warning("Модель не содержит ID пользователя");
                     return IdentityResult.Failed(new IdentityError
                     {
-                        Description = $"Пользователь с ID '{model.UserId}' не найден."
+                        Description = UserServiceErrors.UserIdIsNullOrEmpty().Description.ToString()
                     });
                 }
 
+                _logger.Information("Получение объекта пользователя {UserId}", model.UserId);
+                var user = await _userManager.FindByIdAsync(model.UserId);
+                if (user is null)
+                {
+                    _logger.Warning("Пользователь {TargetUserId} не найден.", model.UserId);
+                    return IdentityResult.Failed(new IdentityError
+                    {
+                        Description = UserServiceErrors.UserNotFound(model.UserId).Description.ToString()
+                    });
+                }
+
+                _logger.Information("Подтверждение Email");
                 var emailConfirmed = await _userManager.ConfirmEmailAsync(user, model.Token);
                 if (!emailConfirmed.Succeeded)
                 {
-                    return emailConfirmed;
-                    //return IdentityResult.Failed(new IdentityError
-                    //{
-                    //    Description = $"Не удалось отметить электронную почту пользователя с ID '{model.UserId}' как подтвержденную."
-                    //});
+                    _logger.Warning("Подтверждение Email не удалось");
+                    return IdentityResult.Failed(new IdentityError
+                    {
+                        Description = UserServiceErrors.EmailConfirmedFailed(user.Id).ToString()
+                    });
                 }
 
+                _logger.Information("Добавление пароля к учетной записи пользователя {TargetUserId}.", user.Id);
                 var resultAddPassword = await _userManager.AddPasswordAsync(user, model.Password);
                 if (!resultAddPassword.Succeeded)
                 {
+                    _logger.Warning("Добавление пароля к учетной записи пользователя {TargetUserId} не удалось.", user.Id);
                     return IdentityResult.Failed(new IdentityError
                     {
-                        Description = "Не удалось сохранить пароль существующей учетной записи пользователя."
+                        Description = UserServiceErrors.AddPasswordFailed(user.Id).Description.ToString()
                     });
                 }
 
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
+                _logger.Information("Сохранение пароля пользоваетеля {TargetUserId} в БД прошло успешно.", user.Id);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                _logger.Error("Ошибка при сохранении пароля пользователя.", e.Message);
                 await transaction.RollbackAsync();
                 throw;
             }
         }
 
+        _logger.Information("Пароль пользователя успешно установлен.");
         return IdentityResult.Success;
     }
 

@@ -41,6 +41,7 @@ https://localhost:7103/swagger/index.html
 https://localhost:7103/swagger/v1/swagger.json
 
 ______________________________________________
+
 # Identity
 
 Все вызовы Generate*TokenAsync → Confirm*Async должны быть до любых операций, меняющих пароль или профиль.
