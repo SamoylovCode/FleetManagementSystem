@@ -35,7 +35,12 @@ public class AdminController : Controller
     public IActionResult AddUserPartial()
     {
         ViewBag.RoleList = new SelectList(
-            items: ApplicationRole.AllRoles.Select(x => new { Value = x.Key, Text = x.Value }),
+            items: ApplicationRole.AllRoles.Select(x =>
+            new
+            {
+                Value = x.Key,
+                Text = x.Value
+            }),
             dataValueField: "Value",
             dataTextField: "Text"
         );
@@ -49,7 +54,12 @@ public class AdminController : Controller
         if (!ModelState.IsValid)
         {
             ViewBag.RoleList = new SelectList(
-                items: ApplicationRole.AllRoles.Select(x => new { Value = x.Key, Text = x.Value }),
+                items: ApplicationRole.AllRoles.Select(x =>
+                new
+                {
+                    Value = x.Key,
+                    Text = x.Value
+                }),
                 dataValueField: "Value",
                 dataTextField: "Text"
             );
@@ -58,9 +68,9 @@ public class AdminController : Controller
         }
 
         var addUserResult = await _userService.AddUserAsync(model, Request.Scheme);
-        if (!addUserResult.Succeeded)
+        if (!addUserResult.IsSuccess)
         {
-            ModelState.AddModelError("", addUserResult.Errors.First().Description);
+            ModelState.AddModelError("", addUserResult.Errors.First().UserDescription);
             return PartialView("_AddUserPartial", model);
         }
 

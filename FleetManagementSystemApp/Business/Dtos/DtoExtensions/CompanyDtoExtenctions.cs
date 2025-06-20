@@ -1,4 +1,5 @@
-﻿using FleetManagementSystemApp.Common;
+﻿using FleetManagementSystemApp.Business.Services.Errors;
+using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Data.Entities;
 
 namespace FleetManagementSystemApp.Business.Dtos.DtoExtensions;
@@ -15,7 +16,11 @@ public class CompanyDtoExtenctions : BaseMapper<Company, CompanyDto>
     /// <returns></returns>
     public override Result<CompanyDto> ToDto(Company company)
     {
-        //TODO: Log the exceptions
+        if(company is null)
+        {
+            return Result<CompanyDto>.Failure(MapperErrors.ModelIsNull());
+        }
+
         var companyDto = new CompanyDto
         (
             company.CompanyId,
@@ -27,6 +32,7 @@ public class CompanyDtoExtenctions : BaseMapper<Company, CompanyDto>
             company.Okpo,
             company.IsMain
         );
+
         return Result<CompanyDto>.Success(companyDto);
     }
 
@@ -46,6 +52,7 @@ public class CompanyDtoExtenctions : BaseMapper<Company, CompanyDto>
         company.Ogrn = companyDto.Ogrn;
         company.Okpo = companyDto.Okpo;
         company.IsMain = companyDto.IsMain;
+
         return Result<Company>.Success(company);
     }
 }

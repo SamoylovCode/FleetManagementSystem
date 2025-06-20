@@ -1,4 +1,5 @@
-﻿using FleetManagementSystemApp.Common;
+﻿using FleetManagementSystemApp.Business.Services.Errors;
+using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Data.Entities;
 
 namespace FleetManagementSystemApp.Business.Dtos.DtoExtensions;
@@ -15,7 +16,10 @@ public class ApplicationUserDtoExtentions : BaseMapper<ApplicationUser, Applicat
     /// <returns></returns>
     public override Result<ApplicationUserDto> ToDto(ApplicationUser user)
     {
-        //TODO: Log the exceptions
+        if (user is null)
+        {
+            return Result<ApplicationUserDto>.Failure(MapperErrors.ModelIsNull());
+        }
 
         var userDto = new ApplicationUserDto
         (
@@ -41,6 +45,11 @@ public class ApplicationUserDtoExtentions : BaseMapper<ApplicationUser, Applicat
     /// <returns></returns>
     public override Result<ApplicationUser> MapFromDto(ApplicationUser user, ApplicationUserDto userDto)
     {
+        if (user is null)
+        {
+            return Result<ApplicationUser>.Failure(MapperErrors.ModelIsNull());
+        }
+
         user.Id = userDto.UserId;
         user.FirstName = userDto.FirstName;
         user.MiddleName = userDto.MiddleName;

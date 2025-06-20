@@ -1,4 +1,11 @@
-﻿# Updating data custom bootstrap components via npm
+﻿# Docker
+Пересобрать образ:
+docker compose up -d --build
+
+Запуск только Redis:
+docker compose up -d redis
+
+# Updating data custom bootstrap components via npm
 Power Shell:
 
 cd C:\Users\pervo\source\repos\FleetManagementSystemApp\FleetManagementSystemApp

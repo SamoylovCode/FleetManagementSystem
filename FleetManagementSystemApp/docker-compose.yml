@@ -1,0 +1,22 @@
+services:
+  redis:
+    image: redis:7.2
+    container_name: local-redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  app:
+    image: my-mvc-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mvc-app
+    depends_on:
+      - redis
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MAILTRAP_USERNAME=${MAILTRAP_USERNAME}
+      - MAILTRAP_PASSWORD=${MAILTRAP_PASSWORD}

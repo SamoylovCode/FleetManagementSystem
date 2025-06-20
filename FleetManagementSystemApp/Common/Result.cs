@@ -1,56 +1,72 @@
-﻿namespace FleetManagementSystemApp.Common;
+﻿using Microsoft.AspNetCore.Identity;
 
-public class Result<T>
+namespace FleetManagementSystemApp.Common;
+
+public class Result
 {
     public bool IsSuccess { get; }
     public bool IsFailure => !IsSuccess;
-    public T Value { get; }
     public Error Error { get; }
     public IList<Error> Errors { get; }
 
-    public Result(T value, bool isSuccess)
+    protected Result(bool isSuccess, Error error, IList<Error> errors)
     {
-        Value = value;
+        if (isSuccess)
+        {
+            if (error is not null || (errors is not null && errors.Count > 0))
+            {
+                throw new ArgumentException("Success result cannot have errors");
+            }
+        }
+        else
+        {
+            if (error is null && (errors is null || errors.Count == 0))
+            {
+                throw new ArgumentException("Failure result must have at least one error");
+            }
+        }
         IsSuccess = isSuccess;
-    }
-
-    public Result(T value, bool isSuccess, Error error) : this(value, isSuccess)
-    {
-        if (isSuccess && error != Error.None || !isSuccess && error == Error.None)
-        {
-            throw new ArgumentException("Invalid error", nameof(error));
-        }
-
         Error = error;
-    }
-
-    public Result(T value, bool  isSuccess, IList<Error> errors) : this(value, isSuccess) 
-    {
-        if (isSuccess && errors.Count > 0  || !isSuccess && errors.Count > 0)
-        {
-            throw new ArgumentException("Invalid error", nameof(errors));
-        }
-
         Errors = errors;
     }
 
-    public static Result<T> Success(T value) => new Result<T>(value, true);
+    public static Result Success() => new Result(true, null, null);
+    public static Result Failure(Error error) => new Result(false, error, null);
+    public static Result Failure(IList<Error> errors) => new Result(false, null, errors);
+}
 
-    public static Result<T> Failure(Error error) => new Result<T>(default, false, error);
-    public static Result<T> Failure(IList<Error> errors) => new Result<T>(default, false, errors);
+public sealed class Result<T> : Result
+{
+    public T Value { get; }
+
+    private Result(T value, bool isSuccess, Error error, IList<Error> errors)
+        : base(isSuccess, error, errors)
+    {
+        if (isSuccess && value is null)
+        {
+            throw new ArgumentNullException(nameof(value), "Success result must have a value");
+        }
+        Value = value;
+    }
+
+    public static Result<T> Success(T value) => new Result<T>(value, true, null, null);
+    public static Result<T> Failure(Error error) => new Result<T>(default, false, error, null);
+    public static Result<T> Failure(IList<Error> errors) => new Result<T>(default, false, null, errors);
 }
 
 public sealed record Error
 {
-    public string Code { get; set; }
-    public string Description { get; set; }
-    public static readonly Error None = new Error(string.Empty, string.Empty);
+    public string? Code { get; set; } = string.Empty;
+    public string? UserDescription { get; set; } = string.Empty;
+    public string DevDescription { get; set; }
+    public object? StructuredLogContext { get; set; } = string.Empty;
+    public static readonly Error None = new Error(string.Empty, string.Empty, string.Empty, null);
 
-    public Error(string code, string description)
+    public Error(string? code = null, string? userDesc = null, string devDesc = "", object? context = null)
     {
         Code = code;
-        Description = description;
+        UserDescription = userDesc;
+        DevDescription = devDesc;
+        StructuredLogContext = context;
     }
-
-    public Error(Enum code, string description) : this(code.ToString(), description) { }
 }

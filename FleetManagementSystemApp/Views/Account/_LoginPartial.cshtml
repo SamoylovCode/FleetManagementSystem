@@ -6,6 +6,9 @@
 }
 
 <h1>@ViewData["Title"]</h1>
+<div>
+	@Html.ValidationSummary(excludePropertyErrors: true, message: "Пожалуйста, иправьте ошибки: ")
+</div>
 <form asp-controller="Account" asp-action="Login" method="post">
 	@Html.AntiForgeryToken()
 

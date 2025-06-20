@@ -25,10 +25,12 @@ public class GlobalExceptionMiddleware
 
             // Логируем исключение с полным стеком
             // Уровень Error (или Critical, если приложение «умирает»)
-            Log.Logger.ForContext("CorrelationId", correlationId).Error(ex,
-                "Unhandled exception. CorrelationId={CorrelationId}, RequestPath={RequestPath}",
-                correlationId,
-                context.Request.Path);
+            Log.Logger.ForContext("CorrelationId", correlationId).
+                Error(
+                    ex,
+                    "Unhandled exception. CorrelationId={CorrelationId}, RequestPath={RequestPath}",
+                    correlationId,
+                    context.Request.Path);
 
             // Формируем ответ клиенту (JSON)
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;

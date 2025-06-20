@@ -8,8 +8,8 @@ namespace FleetManagementSystemApp.Validators
         public UserLoginValidator()
         {
             RuleFor(m => m.Password).NotEmpty().WithMessage("Не указан пароль.");
-            RuleFor(m => m.Email).NotEmpty().WithMessage("Не указан адрес электронной почты.");
-            RuleFor(m => m.Email).EmailAddress().WithMessage("Некорректный формат адреса электронной почты.");
+            RuleFor(m => m.Email).NotEmpty().WithMessage("Не указан адрес электронной почты.")
+                .EmailAddress().WithMessage("Некорректный формат адреса электронной почты.");
         }
     }
 }

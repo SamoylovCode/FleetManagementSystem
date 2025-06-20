@@ -1,4 +1,5 @@
-﻿using FleetManagementSystemApp.Common;
+﻿using FleetManagementSystemApp.Business.Services.Errors;
+using FleetManagementSystemApp.Common;
 
 namespace FleetManagementSystemApp.Business.Dtos.DtoExtensions;
 
@@ -62,7 +63,7 @@ public abstract class BaseMapper<TModel, TDto>
     {
         if (models.Count != Dtos.Count)
         {
-            return Result<List<TModel>>.Failure(new Error("Dto.DoNotMatchSizes", "Размеры коллекций List<TModel> и List<TDto> не совпадают"));
+            return Result<List<TModel>>.Failure(MapperErrors.ModelsSizeMismatch());
         }
 
         List<TModel> result = new List<TModel>();

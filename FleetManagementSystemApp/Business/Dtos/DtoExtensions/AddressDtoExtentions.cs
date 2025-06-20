@@ -1,4 +1,5 @@
-﻿using FleetManagementSystemApp.Common;
+﻿using FleetManagementSystemApp.Business.Services.Errors;
+using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Data.Entities;
 
 namespace FleetManagementSystemApp.Business.Dtos.DtoExtensions;
@@ -17,30 +18,23 @@ public class AddressDtoExtentions : BaseMapper<Address, AddressDto>
     {
         if (address is null)
         {
-            return Result<AddressDto>.Failure(new Error("Address.AddressIsNull", "Объект Address не может быть null."));
+            return Result<AddressDto>.Failure(MapperErrors.ModelIsNull());
         }
 
-        try
-        {
-            var addressDto = new AddressDto
-            (
-                address.AddressId,
-                address.Region,
-                address.City,
-                address.Street,
-                address.House,
-                address.Building,
-                address.Apartment
-            );
+        var addressDto = new AddressDto
+        (
+            address.AddressId,
+            address.Region,
+            address.City,
+            address.Street,
+            address.House,
+            address.Building,
+            address.Apartment
+        );
 
-            return Result<AddressDto>.Success(addressDto);
-        }
-        catch (Exception e)
-        {
-            return Result<AddressDto>.Failure(new Error("Mapping.Exception", e.Message));
-        }
-        
+        return Result<AddressDto>.Success(addressDto);
     }
+
     /// <summary>
     /// Maps address from dto.
     /// </summary>
@@ -51,24 +45,17 @@ public class AddressDtoExtentions : BaseMapper<Address, AddressDto>
     {
         if (address is null)
         {
-            return Result<Address>.Failure(new Error("AddressDto.AddressDtoIsNull", "Объект AddressDto не может быть null."));
+            return Result<Address>.Failure(MapperErrors.ModelIsNull());
         }
 
-        try
-        {
-            address.AddressId = addressDto.AddressId;
-            address.Region = addressDto.Region;
-            address.City = addressDto.City;
-            address.Street = addressDto.Street;
-            address.House = addressDto.House;
-            address.Building = addressDto.Building ?? string.Empty;
-            address.Apartment = addressDto.Apartment ?? string.Empty;
+        address.AddressId = addressDto.AddressId;
+        address.Region = addressDto.Region;
+        address.City = addressDto.City;
+        address.Street = addressDto.Street;
+        address.House = addressDto.House;
+        address.Building = addressDto.Building ?? string.Empty;
+        address.Apartment = addressDto.Apartment ?? string.Empty;
 
-            return Result<Address>.Success(address);
-        }
-        catch (Exception e)
-        {
-            return Result<Address>.Failure(new Error("Mapping.Exception", e.Message));
-        }
+        return Result<Address>.Success(address);
     }
 }

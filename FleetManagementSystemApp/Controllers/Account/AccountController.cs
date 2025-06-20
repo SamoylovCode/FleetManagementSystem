@@ -1,4 +1,7 @@
 ﻿using FleetManagementSystemApp.Business.Services.Abstract;
+using FleetManagementSystemApp.Business.Services.Errors;
+using FleetManagementSystemApp.Common;
+using FleetManagementSystemApp.Common.Extensions;
 using FleetManagementSystemApp.Data;
 using FleetManagementSystemApp.Data.Entities;
 using FleetManagementSystemApp.Data.Repositories.Abstract;
@@ -8,8 +11,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Server.Kestrel.Transport.NamedPipes;
 using System.Collections.Generic;
 using System.Net;
+using static FleetManagementSystemApp.Common.Extensions.Levels;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+/*Alies*/
+using Err = FleetManagementSystemApp.Business.Services.Errors.UserServiceErrors;
+using ILogger = Serilog.ILogger;
 
 namespace FleetManagementSystemApp.Controllers.Account;
 
@@ -22,6 +31,7 @@ public class AccountController : Controller
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IUserService _userService;
     private readonly IConfirmationService _confirmationService;
+    private readonly ILogger _logger;
 
     public string ReturnUrl { get; set; }
 
@@ -30,7 +40,8 @@ public class AccountController : Controller
         ApplicationDbContext context,
         RoleManager<IdentityRole> userRole,
         IUserService userService,
-        IConfirmationService confirmationService)
+        IConfirmationService confirmationService,
+        ILogger logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -38,6 +49,7 @@ public class AccountController : Controller
         _roleManager = userRole;
         _userService = userService;
         _confirmationService = confirmationService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -57,18 +69,26 @@ public class AccountController : Controller
 
         var loginResult = await _userService.LoginUserAsync(model);
 
-        if (!loginResult.Succeeded)
-        {
-            return BadRequest(loginResult.Errors);
-        }
+        return loginResult.ToActionResult(
+            onSuccess: () =>
+            {
+                if (!string.IsNullOrEmpty(returnUrl) && !Url.IsLocalUrl(returnUrl))
+                {
+                    _logger.Warning("Attempt to redirect to external URL: {ReturnUrl}", returnUrl);
+                    returnUrl = "/Autopark/Vehicles";
+                }
 
-        if (!string.IsNullOrEmpty(returnUrl) && !Url.IsLocalUrl(returnUrl))
-        {
-            // TODO: _logger.LogWarning($"Попытка перенаправления на внешний URL: {returnUrl}");
-            returnUrl = "/Autopark/Vehicles";
-        }
+                return RedirectToAction("Vehicles", "Autopark");
+            },
+            onFailure: (errors) =>
+            {
+                foreach (var e in errors)
+                {
+                    ModelState.AddModelError(e.Code ?? string.Empty, e.UserDescription);
+                }
 
-        return RedirectToAction("Vehicles", "Autopark");
+                return PartialView("_LoginPartial", model);
+            });
     }
 
     [HttpPost]
@@ -95,19 +115,30 @@ public class AccountController : Controller
         }
 
         var registerResult = await _userService.CreateUserAsync(model, Request.Scheme);
-        
-        if (!registerResult.Succeeded)
-        {
-            return BadRequest(registerResult.Errors);
-        }
 
-        if (!string.IsNullOrEmpty(returnUrl) && !Url.IsLocalUrl(returnUrl))
-        {
-            // TODO: _logger.LogWarning($"Попытка перенаправления на внешний URL: {returnUrl}");
-            returnUrl = "Autopark/Vehicles";
-        }
+        return registerResult.ToActionResult(
+            onSuccess: () =>
+            {
+                if (!string.IsNullOrEmpty(returnUrl) && !Url.IsLocalUrl(returnUrl))
+                {
+                    _logger.Warning("Attempt to redirect to external URL: {ReturnUrl}", returnUrl);
+                    returnUrl = "Autopark/Vehicles";
+                }
 
-        return RedirectToAction("Vehicles", "Autopark");
+                return RedirectToAction("Vehicles", "Autopark");
+            },
+            onFailure: (errors) =>
+            {
+                if(errors.Count > 0)
+                {
+                    foreach (var e in errors)
+                    {
+                        ModelState.AddModelError(e.Code ?? "", e.UserDescription);
+                    }
+                }
+
+                return PartialView("_RegisterPartial", model);
+            });
     }
 
     [HttpGet]
@@ -116,24 +147,36 @@ public class AccountController : Controller
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            ModelState.AddModelError("", errorMessage: $"Пользователь с таким ID {userId} не найден");
-            return View("ConfirmEmailFailed");
+            _logger.Log(Err.UserNotFoundById(userId), Warning);
+            return View("Error", new ErrorViewModel { Description = Err.UserNotFoundById(userId).UserDescription!});
         }
 
-        if (!await _userManager.HasPasswordAsync(user))
+        if(user.PasswordHash is null)
         {
             return RedirectToAction("SetPasswordForm", new { userId, token });
         }
 
-        var confirmResult = await _userManager.ConfirmEmailAsync(user, token);
-        if (!confirmResult.Succeeded)
+        if (user.EmailConfirmed)
         {
-            ModelState.AddModelError("", confirmResult.Errors.First().Description);
-            return View("ConfirmEmailFailed");
+            _logger.Warning("User {TargetUserId} email is already confirmed.", userId);
+            return View("Error", new ErrorViewModel { Description = "Почта пользователя уже подтверждена." });
         }
+        else
+        {
+            var confirmResult = await _userManager.ConfirmEmailAsync(user, token);
 
-        await _signInManager.SignInAsync(user, isPersistent: true);
-        return View("ConfirmEmailSuccess");
+            return await confirmResult.ToActionResultAsync(
+                onSuccess: async () =>
+                {
+                    await _signInManager.SignInAsync(user, isPersistent: true);
+                    return View("ConfirmEmailSuccess");
+                },
+                onFailure: async (errors) =>
+                {
+                    _logger.Error("Error confirming email for user {TargetUserId}. Errors: {@Errors}.", userId, errors);
+                    return View("Error", new ErrorViewModel { Description = Err.EmailConfirmedFailed(userId).UserDescription! });
+                });
+        }
     }
 
     [HttpGet]
@@ -141,8 +184,10 @@ public class AccountController : Controller
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
         {
-            return BadRequest($"Пользователем '{userId}' или токен не указаны.");
+            _logger.Error("User ID {TargetUserId} or token {Token} not provided to set password.", userId, token);
+            return View("Error", new ErrorViewModel { Description = "Идентификатор пользователя или токен не переданы, чтобы назначить пароль учетной записи." });
         }
+
         return View("SetPassword", new SetPassword { UserId = userId, Token = token });
     }
 
@@ -155,16 +200,22 @@ public class AccountController : Controller
         }
 
         var result = await _userService.SetPasswordAsync(model);
-        if (!result.Succeeded)
-        {
-            foreach (var e in result.Errors)
+        return result.ToActionResult(
+            onSuccess: () =>
             {
-                ModelState.AddModelError("", e.Description);
-            }
-            return View("SetPassword", model);
-        }
-
-        return View("ConfirmEmailSuccess");
+                return View("ConfirmEmailSuccess");
+            },
+            onFailure: (errors) =>
+            {
+                if (errors.Any())
+                {
+                    foreach (var e in errors)
+                    {
+                        ModelState.AddModelError(e.Code ?? "", e.UserDescription);
+                    }
+                }
+                return View("SetPassword", model);
+            });
     }
 
     [HttpGet]
@@ -178,14 +229,12 @@ public class AccountController : Controller
     //{
     //    if(!ModelState.IsValid)
     //    {
-    //        return BadRequest();
     //    }
 
     //    var resetResult = await _userService.ResetPasswordAsync(model);
 
     //    if (!resetResult.Succeeded)
     //    {
-    //        return BadRequest(resetResult.Errors);
     //    }
 
     //    return RedirectToAction(nameof(ChangeUserPassword));

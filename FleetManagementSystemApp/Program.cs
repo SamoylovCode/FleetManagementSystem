@@ -4,19 +4,21 @@ using FleetManagementSystemApp.Business.Services.Abstract;
 using FleetManagementSystemApp.Configs;
 using FleetManagementSystemApp.Data;
 using FleetManagementSystemApp.Data.Entities;
+using FleetManagementSystemApp.Infrastructure.Caching;
 using FleetManagementSystemApp.Logging;
 using FleetManagementSystemApp.Middleware;
 using FleetManagementSystemApp.Validators;
 using FluentValidation;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
-using Serilog.Formatting.Compact;
+using StackExchange.Redis;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -38,10 +40,19 @@ builder.Host.UseSerilog((ctx, services, lc) =>
     }
 });
 
+builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "fms_app:";
+});
+builder.Services.AddLazyCache();
+
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+builder.Services.AddSingleton<IHybridCache, HybridCache>();
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -100,8 +111,13 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
 builder.Services.AddControllersWithViews(options =>
-    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute())
-    );
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()))
+    .AddNewtonsoftJson(opts =>
+    {
+        opts.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+        opts.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+        opts.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+    });
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddRazorPages();
@@ -115,7 +131,9 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminRolePolicy", policy => policy.RequireRole("Admin"));
 });
-
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis"))
+    );
 StartupChecks.ValidateRequiredSettings(builder.Configuration); //Validation environment variables, etc.
 
 /***Pipeline***/

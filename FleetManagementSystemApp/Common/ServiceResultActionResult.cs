@@ -46,7 +46,7 @@ public class ServiceResultActionResult<T> : IActionResult
                 ViewName = dictionary.ViewName,
                 ViewData = new ViewDataDictionary<string>(metadataProvider,context.ModelState)
                 {
-                    Model = _result.Error.Description
+                    Model = _result.Error.DevDescription
                 },
                 TempData = _tempData.GetTempData(context.HttpContext)
             };

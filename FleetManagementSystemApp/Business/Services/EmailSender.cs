@@ -3,23 +3,28 @@ using FleetManagementSystemApp.Configs;
 using MimeKit;
 using FleetManagementSystemApp.Business.Services.Abstract;
 using FleetManagementSystemApp.Common;
+using FleetManagementSystemApp.Business.Services.Errors;
+using ILogger = Serilog.ILogger;
+using FleetManagementSystemApp.Common.Extensions;
 
 namespace FleetManagementSystemApp.Business.Services;
 
 public class EmailSender : IEmailSender
 {
     private readonly EmailSettings _emailSettings;
+    private readonly ILogger _logger;
     private readonly string _username;
     private readonly string _password;
 
-    public EmailSender(IConfiguration configuration)
+    public EmailSender(IConfiguration configuration, ILogger logger)
     {
+        _logger = logger;
         _emailSettings = configuration.GetSection("EmailSettings").Get<EmailSettings>();
         _username = Environment.GetEnvironmentVariable("MAILTRAP_USERNAME");
         _password = Environment.GetEnvironmentVariable("MAILTRAP_PASSWORD");
     }
 
-    public async Task SendEmailAsync(string toEmail, string subject, string body)
+    public async Task<Result> SendEmailAsync(string toEmail, string subject, string body)
     {
         var message = new MimeMessage();
         message.From.Add(MailboxAddress.Parse(_emailSettings.SenderEmail));
@@ -36,12 +41,13 @@ public class EmailSender : IEmailSender
             await client.AuthenticateAsync(_username, _password);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
+
+            return Result.Success();
         }
         catch (Exception e)
         {
-            //TODO: Do logger
-            Console.WriteLine("Ошибка при отправке письма: " + e.Message);
-            throw;
+            _logger.Log(UserServiceErrors.SendEmailFailed(e.Message), Levels.Error);
+            return Result.Failure(UserServiceErrors.SendEmailFailed(e.Message));
         }
     }
 }
