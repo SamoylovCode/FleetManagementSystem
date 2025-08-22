@@ -1,0 +1,21 @@
+﻿@model VehiclePageViewModel
+
+@{
+    Layout = "_MainLayout";
+}
+
+@if (User.IsInRole("admin") || User.IsInRole("manager"))
+{
+    <div class="d-flex gap-2 mt-4 mb-4">
+        <a asp-controller="Vehicles" asp-action="Edit" asp-route-vehicleId="@Model.VehicleId" class="btn btn-prime py-2 w-auto">Редактировать</a>
+        <a asp-action="List" asp-controller="Vehicles" class="btn btn-prime py-2 w-auto">Отмена</a>
+    </div>
+}
+
+<input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+@* <input type="hidden" asp-for="VehicleId" /> *@
+
+@await Html.PartialAsync("Partials/_VehicleIdentificationDataReadOnlyPartial", Model.VehicleIdentificationData)
+@await Html.PartialAsync("Partials/_PassportReadOnlyPartial", Model.Passport)
+@await Html.PartialAsync("Partials/_InsuranceReadOnlyPartial", Model.Insurance)
+@await Html.PartialAsync("Partials/_RegistrationCertificateReadOnlyPartial", Model.RegistrationCertificate)

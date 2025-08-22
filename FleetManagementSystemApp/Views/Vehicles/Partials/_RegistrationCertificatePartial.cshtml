@@ -1,0 +1,17 @@
+﻿@model RegistrationCertificateViewModel
+
+<prefixed-field tag="input" type="hidden" asp-for="RegCertificateId" value="@Model.RegCertificateId" />
+<prefixed-field tag="input" type="hidden" asp-for="VehicleId" value="@Model.VehicleId" />
+<input type="hidden" name="RegistrationCertificate.RowVersion" value="@Convert.ToBase64String(Model.RowVersion ?? Array.Empty<byte>())" />
+
+<h5>Свидетельство о регистрации транспортного средства (СТС):</h5>
+<div class="mb-3">
+    <prefixed-field tag="label" class="form-label" asp-for="Number">@Model.Number</prefixed-field>
+    <prefixed-field tag="input" class="form-control" asp-for="Number" />
+    <prefixed-field tag="span" asp-validation-for="Number" class="text-danger" />
+</div>
+<div class="mb-3">
+    <prefixed-field tag="label" class="form-label" asp-for="IssueDate">@Model.IssueDate</prefixed-field>
+    <prefixed-field tag="input" type="date" class="form-control" asp-for="IssueDate" />
+    <prefixed-field tag="span" asp-validation-for="IssueDate" class="text-danger" />
+</div>

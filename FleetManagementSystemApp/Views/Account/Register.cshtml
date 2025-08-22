@@ -1,0 +1,202 @@
+﻿@model RegisterViewModel
+
+@{
+	Layout = "_AuthLayout";
+}
+
+<h1 class="text-center mb-4">Регистрация</h1>
+<h5 class="text-body-secondary mb-3">Пожалуйста, зарегистрируйтесь</h5>
+<div>
+	@Html.ValidationSummary(excludePropertyErrors: true, message: "Пожалуйста, исправьте ошибки: ", new { @class = "alert alert-danger" })
+</div>
+
+<div class="container">
+    <!-- Прогресс-бар с навигацией -->
+    <nav class="navbar navbar-expand-lg navbar-light rounded mb-2">
+        <div class="container-fluid">
+            <ul class="navbar-nav w-100 justify-content-between">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#step1">
+                        <span class="d-block text-center">
+                            <i class="bi bi-1-circle-fill fs-4 text-dark"></i>
+                            <div class="small mt-1">Данные о пользователе</div>
+                        </span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#step2">
+                        <span class="d-block text-center">
+                            <i class="bi bi-2-circle text-muted fs-4"></i>
+                            <div class="small text-muted mt-1">Данные организации (1/2)</div>
+                        </span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#step3">
+                        <span class="d-block text-center">
+                            <i class="bi bi-3-circle text-muted fs-4"></i>
+                            <div class="small text-muted mt-1">Данные организации (2/2)</div>
+                        </span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <!-- Многошаговая форма -->
+    <form asp-controller="Account" asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
+	    @Html.AntiForgeryToken()
+
+        <!-- Шаг 1 -->
+        <div id="step1" class="step-section d-block">
+            <h4 class="mb-4">Данные о пользователе</h4>
+
+            <div class="row">
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="Email"></label>
+                    <input class="form-control" name="Email" asp-for="Email" placeholder="name@example.com" required />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="FirstName"></label>
+                    <input class="form-control" name="FirstName" asp-for="FirstName" required />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="MiddleName"></label>
+                    <input class="form-control" name="MiddleName" asp-for="MiddleName" required />
+                    <span asp-validation-for="MiddleName" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="LastName"></label>
+                    <input class="form-control" name="LastName" asp-for="LastName" required />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="Password"></label>
+                    <input class="form-control" name="Password" asp-for="Password" type="password" required />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="PasswordConfirm"></label>
+                    <input class="form-control" name="PasswordConfirm" asp-for="PasswordConfirm" type="password" required />
+                    <span asp-validation-for="PasswordConfirm" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <div></div> <!-- Пустой div для выравнивания -->
+                <button type="button" class="btn btn-prime w-100"
+                        onclick="enableStep(2)">
+                    Продолжить <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Шаг 2 -->
+        <div id="step2" class="step-section d-none">
+            <div class="mb-4">
+                <a class="text-body-tertiary text-decoration-none text-decoration-hover-none" role="button"
+                   onclick="enableStep(1)">
+                    <i class="bi bi-arrow-left me-2"></i>Назад
+                </a>
+            </div>
+            <h4 class="mb-4">Данные организации (1/2)</h4>
+
+            <div class="row">
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="CompanyName"></label>
+                    <input class="form-control" name="CompanyName" asp-for="CompanyName" required />
+                    <span asp-validation-for="CompanyName" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="PhoneNum"></label>
+                    <input class="form-control" name="PhoneNum" asp-for="PhoneNum" required />
+                    <span asp-validation-for="PhoneNum" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="Region"></label>
+                    <input class="form-control" name="Region" asp-for="Region" required />
+                    <span asp-validation-for="Region" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="City"></label>
+                    <input class="form-control" name="City" asp-for="City" required />
+                    <span asp-validation-for="City" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="Street"></label>
+                    <input class="form-control" name="Street" asp-for="Street" required />
+                    <span asp-validation-for="Street" class="text-danger"></span>
+                </div>
+                <div class="d-flex gap-md-3 mb-2">
+                    <div class="flex-fill">
+                        <label class="form-label required" asp-for="House"></label>
+                        <input class="form-control" name="House" asp-for="House" required />
+                        <span asp-validation-for="House" class="text-danger"></span>
+                    </div>
+                    <div class="flex-fill">
+                        <label class="form-label" asp-for="Building"></label>
+                        <input class="form-control" name="Building" asp-for="Building" />
+                        <span asp-validation-for="Building" class="text-danger"></span>
+                    </div>
+                    <div class="flex-fill">
+                        <label class="form-label" asp-for="Apartment"></label>
+                        <input class="form-control" name="Apartment" asp-for="Apartment" />
+                        <span asp-validation-for="Apartment" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between mt-4">
+                <button type="button" class="btn btn-prime w-100"
+                        onclick="enableStep(3)">
+                    Продолжить <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Шаг 3 -->
+        <div id="step3" class="step-section d-none">
+            <div class="mb-4">
+                <a class="text-body-tertiary text-decoration-none text-decoration-hover-none" role="button"
+                        onclick="enableStep(2)">
+                    <i class="bi bi-arrow-left me-2"></i>Назад
+                </a>
+            </div>
+            <h4 class="mb-4">Данные организации (2/2)</h4>
+
+            <div class="row">
+                <div class="mb-2">
+                    <label class="form-label required" asp-for="Inn"></label>
+                    <input class="form-control" name="Inn" asp-for="Inn" required />
+                    <span asp-validation-for="Inn" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" asp-for="Kpp"></label>
+                    <input class="form-control" name="Kpp" asp-for="Kpp" />
+                    <span asp-validation-for="Kpp" class="text-danger"></span>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" asp-for="Ogrn"></label>
+                    <input class="form-control" name="Ogrn" asp-for="Ogrn" />
+                    <span asp-validation-for="Ogrn" class="text-danger"></span>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label" asp-for="Okpo"></label>
+                    <input class="form-control" name="Okpo" asp-for="Okpo" />
+                    <span asp-validation-for="Okpo" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4 w-100">
+                <button class="btn btn-prime w-100 py-2" type="submit">Зарегистрироваться</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="text-center mb-2">
+	<div class="text-body-tertiary">Есть учетная запись? <a class="text-body-tertiary" asp-controller="Account" asp-action="Login">Войти</a></div>
+</div>

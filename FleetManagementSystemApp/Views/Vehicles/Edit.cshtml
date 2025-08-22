@@ -1,0 +1,63 @@
+﻿@model VehiclePageViewModel
+
+@{
+    Layout = "_MainLayout";
+}
+
+<form asp-controller="Vehicles" asp-action="Edit" asp-route-vehicleId="@Model.VehicleId" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="d-flex gap-2 mt-4 mb-4">
+        <button type="submit" class="btn btn-prime py-2">Сохранить</button>
+        <a asp-action="List" asp-controller="Vehicles" class="btn btn-prime py-2">Отмена</a>
+    </div>
+    
+    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+    <input type="hidden" asp-for="VehicleId"/>
+    <input type="hidden" name="VehicleIdentificationData.Prefix" asp-for="@Model.VehicleIdentificationData.Prefix" />
+    <input type="hidden" name="Passport.Prefix" asp-for="@Model.Passport.Prefix" />
+    <input type="hidden" name="Insurance.Prefix" asp-for="@Model.Insurance.Prefix" />
+    <input type="hidden" name="RegistrationCertificate.Prefix" asp-for="@Model.RegistrationCertificate.Prefix" />
+    
+    @await Html.PartialAsync(
+        "Partials/_VehicleIdentificationDataPartial",
+        Model?.VehicleIdentificationData,
+        new ViewDataDictionary(ViewData)
+        {
+            TemplateInfo = { HtmlFieldPrefix = Model?.VehicleIdentificationData?.Prefix }
+        })
+
+    @await Html.PartialAsync(
+        "Partials/_PassportPartial",
+        Model?.Passport,
+        new ViewDataDictionary(ViewData)
+        {
+            TemplateInfo = { HtmlFieldPrefix = Model?.Passport?.Prefix }
+        })
+
+    @await Html.PartialAsync(
+        "Partials/_InsurancePartial",
+        Model?.Insurance,
+        new ViewDataDictionary(ViewData)
+        {
+            TemplateInfo = { HtmlFieldPrefix = Model?.Insurance?.Prefix }
+        })
+
+    @await Html.PartialAsync(
+        "Partials/_RegistrationCertificatePartial",
+        Model?.RegistrationCertificate,
+        new ViewDataDictionary(ViewData)
+        {
+            TemplateInfo = { HtmlFieldPrefix = Model?.RegistrationCertificate?.Prefix }
+        })
+</form>
+
+<script>
+    setTimeout(function(){
+        var alert = document.getElementById('autoCloseAlert');
+        if (alert){
+            var btAlert = new bootstrap.Alert(alert);
+            btAlert.close();
+        }
+    }, 3000)
+</script>

@@ -3,7 +3,7 @@
 public class Company
 {
     public Guid CompanyId { get; set; }
-    public string CompanyName { get; set; }
+    public string Name { get; set; }
     public string PhoneNum { get; set; }
     public string Inn { get; set; }
     public string? Kpp { get; set; }
@@ -19,10 +19,8 @@ public class Company
     /// <summary>
     /// The foreign key
     /// </summary>
-    /// <value>
-    /// The users.
-    /// </value>
     public IEnumerable<ApplicationUser>? Users { get; set; }
+    public IEnumerable<Vehicle>? Vehicles { get; set; }
 
     /// <summary>
     /// The navigation property

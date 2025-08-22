@@ -1,13 +1,18 @@
-﻿using FleetManagementSystemApp.Business.Dtos.DtoExtensions;
+﻿using FleetManagementSystemApp.Business.Dtos;
+using FleetManagementSystemApp.Business.Dtos.DtoExtensions;
 using FleetManagementSystemApp.Business.Services;
 using FleetManagementSystemApp.Business.Services.Abstract;
+using FleetManagementSystemApp.Business.SubModelHandlers;
 using FleetManagementSystemApp.Configs;
 using FleetManagementSystemApp.Data;
 using FleetManagementSystemApp.Data.Entities;
+using FleetManagementSystemApp.Data.SeedDB;
 using FleetManagementSystemApp.Infrastructure.Caching;
+using FleetManagementSystemApp.Infrastructure.ModelBinders;
 using FleetManagementSystemApp.Logging;
 using FleetManagementSystemApp.Middleware;
 using FleetManagementSystemApp.Validators;
+using FleetManagementSystemApp.ViewModels.Vehicle;
 using FluentValidation;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -84,12 +89,31 @@ builder.Services.AddOptions<EmailSettings>()
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IVehicleService, VehicleService>();
+builder.Services.AddScoped<IAggregateModelService<VehiclePageViewModel>, AggregateModelService<VehiclePageViewModel>>();
+builder.Services.AddScoped<IVehicleDataAggregator, VehicleDataAggregator>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddTransient<IConfirmationService, ConfirmationEmailService>();
+builder.Services.AddTransient<IEmailSender, EmailSender>();
+builder.Services.AddScoped<DateRangeParser>();
 builder.Services.AddScoped<ApplicationUserDtoExtentions>();
 builder.Services.AddScoped<AddressDtoExtentions>();
-builder.Services.AddScoped<CompanyDtoExtenctions>();
-builder.Services.AddTransient<IEmailSender, EmailSender>();
-builder.Services.AddTransient<IConfirmationService, ConfirmationEmailService>();
+builder.Services.AddScoped<CompanyDtoExtentions>();
+builder.Services.AddScoped<VehicleDtoExtentions>();
+builder.Services.AddScoped<PassportDtoExtentions>();
+builder.Services.AddScoped<InsuranceDtoExtentions>();
+builder.Services.AddScoped<RegistrationCertificateDtoExtentions>();
+builder.Services.AddScoped<VehicleIdentificationDataDtoExtentions>();
+builder.Services.AddScoped<IBaseMapper<Vehicle, VehicleDto>, VehicleDtoExtentions>();
+builder.Services.AddScoped<IBaseMapper<Passport, PassportDto>, PassportDtoExtentions>();
+builder.Services.AddScoped<IBaseMapper<Insurance, InsuranceDto>, InsuranceDtoExtentions>();
+builder.Services.AddScoped<IBaseMapper<RegistrationCertificate, RegistrationCertificateDto>, RegistrationCertificateDtoExtentions>();
+builder.Services.AddScoped<ISeederDatabase, SeederDatabase>();
+builder.Services.AddScoped<ISubModelHandlerFactory, SubModelHandlerFactory>();
+builder.Services.AddScoped<ISubModelHandler, PassportSubModelHandler>();
+builder.Services.AddScoped<ISubModelHandler, InsuranceSubModelHandler>();
+builder.Services.AddScoped<ISubModelHandler, RegistrationCertificateSubModelHandler>();
+builder.Services.AddScoped<ISubModelHandler, VehicleIdentificationDataSubModelHandler>();
 // Configuring DataProtection key storage; change this in production!
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(@"C:\keys\"))
@@ -110,8 +134,13 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.CheckConsentNeeded = context => false;
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
-builder.Services.AddControllersWithViews(options =>
-    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()))
+
+builder.Services
+    .AddControllersWithViews(options =>
+    {
+        options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+        options.ModelBinderProviders.Insert(0, new DateRangeModelBinderProvider());
+    })
     .AddNewtonsoftJson(opts =>
     {
         opts.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
@@ -132,8 +161,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminRolePolicy", policy => policy.RequireRole("Admin"));
 });
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis"))
-    );
+    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")));
 StartupChecks.ValidateRequiredSettings(builder.Configuration); //Validation environment variables, etc.
 
 /***Pipeline***/
@@ -184,11 +212,24 @@ app.UseCookiePolicy();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Autopark}/{action=Vehicles}/{id?}");
+//app.MapControllerRoute(
+//    name: "default",
+//    pattern: "{controller=Vehicles}/{action=List}/{id?}");
 
 app.MapControllers();
 app.MapRazorPages();
+
+// Initialization of data
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<ISeederDatabase>();
+    await seeder.SeedAsync();
+}
+
+app.MapGet("/", context =>
+{
+    context.Response.Redirect("/vehicles");
+    return Task.CompletedTask;
+});
 
 app.Run();

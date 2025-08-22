@@ -1,5 +1,4 @@
 ﻿using Serilog.Events;
-using System.ComponentModel.DataAnnotations;
 using ILogger = Serilog.ILogger;
 
 namespace FleetManagementSystemApp.Common.Extensions;
@@ -14,8 +13,8 @@ public static class LoggerExtensions
         logger.Write(
             level,
             error.StructuredLogContext is not null
-                ? "Business Erorr {ErrorCode}: {Description} {@Context}"
-                : "Business Erorr {ErrorCode}: {Description}",
+                ? "Business Error {ErrorCode}: {Description} {@Context}"
+                : "Business Error {ErrorCode}: {Description}",
             error.Code,
             error.DevDescription,
             error.StructuredLogContext);

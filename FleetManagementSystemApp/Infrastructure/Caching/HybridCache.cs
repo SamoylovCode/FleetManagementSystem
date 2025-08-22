@@ -1,4 +1,5 @@
-﻿using LazyCache;
+﻿using FleetManagementSystemApp.Common.Extensions;
+using LazyCache;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using StackExchange.Redis;
@@ -17,7 +18,12 @@ public class HybridCache : IHybridCache
     private readonly ILogger _logger;
     private readonly IConnectionMultiplexer _redisConnection;
 
-    public HybridCache(IAppCache memoryCache, IDistributedCache redis, IConfiguration config, ILogger logger, IConnectionMultiplexer redisConnection)
+    public HybridCache(
+        IAppCache memoryCache,
+        IDistributedCache redis,
+        IConfiguration config,
+        ILogger logger,
+        IConnectionMultiplexer redisConnection)
     {
         _memoryCache = memoryCache;
         _redis = redis;
@@ -26,7 +32,7 @@ public class HybridCache : IHybridCache
         _redisConnection = redisConnection;
 
         var subscriber = _redisConnection.GetSubscriber();
-        subscriber.Subscribe(InvalidateChannel, (channel, message) => 
+        subscriber.Subscribe(InvalidateChannel, (channel, message) =>
         {
             var msg = (string)message;
             if (msg.StartsWith("prefix:"))
@@ -57,64 +63,80 @@ public class HybridCache : IHybridCache
         return $"__prefix:{prefix}__keys";
     }
 
-    public async Task<T> GetOrAddAsync<T>(Func<Task<T>> factory, string key, TimeSpan? ttl = null, string? prefix = null)
+    public async Task<T> GetOrAddAsync<T>(
+        Func<Task<T>> factory,
+        string cacheKey,
+        TimeSpan? ttl = null,
+        string? prefix = null)
     {
-        if(_memoryCache.TryGetValue(key, out T cached))
+        if(_memoryCache.TryGetValue(cacheKey, out T cached))
         {
-            _logger.Debug("MemoryCache hit: {Key}", key);
+            _logger.Debug("MemoryCache hit: {Key}", cacheKey);
             return cached;
         }
 
-        var data = await _redis.GetAsync(key);
+        var data = await _redis.GetAsync(cacheKey);
 
         if (data is not null)
         {
             var serializedData = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(data));
-            _memoryCache.Add(key, serializedData, ttl ?? _defaultTtl);
-            _logger.Debug("RedisCache hit: {Key}", key);
+            _memoryCache.Add(cacheKey, serializedData, ttl ?? _defaultTtl);
+            _logger.Debug("RedisCache hit: {CacheKey}", cacheKey);
             return serializedData!;
         }
         else
         {
-            _logger.Debug("RedisCache miss: {Key}", key);
+            _logger.Debug("RedisCache miss: {CacheKey}", cacheKey);
         }
 
         var value = await factory();
 
+        if (value == null)
+        {
+            _logger.Debug("Factory returned null for key {CacheKey}, skipping cache.", cacheKey);
+            return default!;
+        }
+
         var serializedValue = JsonConvert.SerializeObject(value);
         var bytesValue = Encoding.UTF8.GetBytes(serializedValue);
-        await _redis.SetAsync(key, bytesValue, new DistributedCacheEntryOptions
+        await _redis.SetAsync(cacheKey, bytesValue, new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = ttl ?? _defaultTtl
         });
 
         if (!string.IsNullOrWhiteSpace(prefix))
         {
-            await RedisDb.SetAddAsync(GetSpecifiedPrefix(prefix), key);
-            _logger.Information($"Added {prefix} in Redis store", prefix);
+            await RedisDb.SetAddAsync(GetSpecifiedPrefix(prefix), cacheKey);
+            var added = await RedisDb.SetContainsAsync(GetSpecifiedPrefix(prefix), cacheKey);
+            if (!added)
+            {
+                _logger.Error("Failed to add key {CacheKey} to prefix container {Prefix}", cacheKey, prefix);
+                throw new InvalidOperationException($"Failed to add key {cacheKey} to prefix {prefix}");
+            }
+            _logger.Information("Added key {CacheKey} to {Prefix} in Redis store", cacheKey, prefix);
         }
 
-        _memoryCache.Add(key, value, ttl ?? _defaultTtl);
-        _logger.Information("Cached new value under key: {Key}", key);
+        _memoryCache.Add(cacheKey, value, ttl ?? _defaultTtl);
+        _logger.Information("Cached new value under key: {CacheKey}", cacheKey);
 
         return value;
     }
 
-    public async Task RemoveAsync(string key, string? prefix = null)
+    public async Task RemoveAsync(string cacheKey, string? prefix = null)
     {
-        InvalidateLocalKey(key);
+        InvalidateLocalKey(cacheKey);
 
-        await _redis.RemoveAsync(key);
-        _logger.Information("Removed cache entry: {Key}", key);
+        await _redis.RemoveAsync(cacheKey);
+        _logger.Information("Removed cache entry: {CacheKey}", cacheKey);
 
         if (!string.IsNullOrEmpty(prefix))
         {
-            await RedisDb.SetRemoveAsync(GetSpecifiedPrefix(prefix), key);
+            await RedisDb.SetRemoveAsync(GetSpecifiedPrefix(prefix), cacheKey);
             _logger.Information("Removed cache entry by prefix: {Prefix}", prefix);
         }
 
         var sub = _redisConnection.GetSubscriber();
-        await sub.PublishAsync(InvalidateChannel, key);
+        await sub.PublishAsync(InvalidateChannel, cacheKey);
     }
 
     public async Task RemoveByPrefixAsync(string prefix)
@@ -124,10 +146,10 @@ public class HybridCache : IHybridCache
 
         foreach (var member in members)
         {
-            var key = member.ToString()!;
-            InvalidateLocalKey(key);
-            await _redis.RemoveAsync(key);
-            _logger.Information("Removed cache entry by prefix: {Key}", key);
+            var cacheKey = member.ToString()!;
+            InvalidateLocalKey(cacheKey);
+            await _redis.RemoveAsync(cacheKey);
+            _logger.Information("Removed cache entry by prefix: {CacheKey}", cacheKey);
         }
 
         await RedisDb.KeyDeleteAsync(specifiedKey);
@@ -136,9 +158,9 @@ public class HybridCache : IHybridCache
         await sub.PublishAsync(InvalidateChannel, $"prefix:{prefix}");
     }
 
-    public void InvalidateLocalKey(string key)
+    public void InvalidateLocalKey(string cacheKey)
     {
-        _memoryCache.Remove(key);
+        _memoryCache.Remove(cacheKey);
     }
 
     public async Task InvalidateLocalByPrefix(string prefix)
@@ -148,8 +170,25 @@ public class HybridCache : IHybridCache
 
         foreach(var member in members)
         {
-            var key = member.ToString()!;
-            _memoryCache.Remove(key);
+            var cacheKey = member.ToString()!;
+            _memoryCache.Remove(cacheKey);
+        }
+    }
+
+    // For debuging
+    public async Task DumpPrefixesAsync()
+    {
+        var server = _redisConnection.GetServer(_redisConnection.GetEndPoints().First());
+
+        // Get all keys with prefixes
+        foreach (var cacheKey in server.Keys(pattern: "__prefix:*__keys"))
+        {
+            Console.WriteLine($"Prefix key container: {cacheKey}");
+            var members = await RedisDb.SetMembersAsync(cacheKey);
+            foreach (var member in members)
+            {
+                Console.WriteLine($"  -> {member}");
+            }
         }
     }
 }

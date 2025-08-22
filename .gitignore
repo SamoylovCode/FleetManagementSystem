@@ -407,3 +407,9 @@ secrets.json
 appsettings.json
 appsettings.Development.json
 appsettings.Production.json
+
+# libraries
+/wwwroot/lib/
+/lib/
+/node_modules/
+/wwwroot/lib/bootstrap-icons/

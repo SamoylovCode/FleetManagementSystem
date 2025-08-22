@@ -1,5 +1,4 @@
-﻿@* _MainLayout.cshtml (used for internal pages where PartialPageModel is required) *@
-@model object
+﻿@model object
 
 <!DOCTYPE html>
 <html lang="ru">
@@ -7,13 +6,19 @@
 	@await Html.PartialAsync("_MetaPartial")
 	@await Html.PartialAsync("_CssPartial")
 </head>
-<body>
-	<h1>Main page</h1>
-	<vc:sidebar/>
-	<main role="main">
-		<vc:modal title="Загрузка..."/>
-		@RenderBody()
-	</main>
+<body class="main d-flex flex-column min-vh-100 m-0">
+    <div class="container-fluid flex-grow-1">
+        <div class="row flex-nowrap">
+			<div class="col-12 col-md-4 col-lg-3 col-xl-2 d-none d-md-flex flex-column vh-100 p-0">
+				<vc:sidebar/>
+			</div>
+			<div class="col d-flex flex-column">
+				<vc:alert/>
+				<vc:modal title="Загрузка..."/>
+				@RenderBody()
+			</div>
+		</div>
+	</div>
 	@await Html.PartialAsync("_ScriptsPartial")
 </body>
 </html>

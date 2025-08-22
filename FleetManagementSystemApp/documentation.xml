@@ -8,271 +8,16 @@
             <summary>
             Represents a postal address data transfer object (DTO).
             </summary>
-            <param name="addressId">The unique identifier of the address.</param>
-            <param name="region">The region or state part of the address.</param>
-            <param name="city">The city or locality part of the address.</param>
-            <param name="street">The street name.</param>
-            <param name="house">The house or building number.</param>
-            <param name="building">Optional. The building or block number (if applicable).</param>
-            <param name="apartment">Optional. The apartment or unit number (if applicable).</param>
-        </member>
-        <member name="M:FleetManagementSystemApp.Business.Dtos.AddressDto.#ctor(System.Guid,System.String,System.String,System.String,System.String,System.String,System.String)">
-            <summary>
-            Represents a postal address data transfer object (DTO).
-            </summary>
-            <param name="addressId">The unique identifier of the address.</param>
-            <param name="region">The region or state part of the address.</param>
-            <param name="city">The city or locality part of the address.</param>
-            <param name="street">The street name.</param>
-            <param name="house">The house or building number.</param>
-            <param name="building">Optional. The building or block number (if applicable).</param>
-            <param name="apartment">Optional. The apartment or unit number (if applicable).</param>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.AddressDto.AddressId">
-            <summary>
-            Gets the address identifier.
-            </summary>
-            <value>
-            The address identifier.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.AddressDto.Region">
-            <summary>
-            Gets the region.
-            </summary>
-            <value>
-            The region.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.AddressDto.City">
-            <summary>
-            Gets the city.
-            </summary>
-            <value>
-            The city.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.AddressDto.Street">
-            <summary>
-            Gets the street.
-            </summary>
-            <value>
-            The street.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.AddressDto.House">
-            <summary>
-            Gets the house.
-            </summary>
-            <value>
-            The house.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.AddressDto.Building">
-            <summary>
-            Gets the building.
-            </summary>
-            <value>
-            The building.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.AddressDto.Apartment">
-            <summary>
-            Gets the apartment.
-            </summary>
-            <value>
-            The apartment.
-            </value>
         </member>
         <member name="T:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto">
             <summary>
             Represents user data transfer object (DTO)
             </summary>
-            <param name="userId">Unique user identifier</param>
-            <param name="firstName">User's first name</param>
-            <param name="middleName">User's middle name</param>
-            <param name="lastName">User's last name</param>
-            <param name="email">User's email address</param>
-            <param name="normalizedEmail">Normalized email for case-insensitive comparison</param>
-            <param name="emailConfirmed">Indicates if email was confirmed</param>
-            <param name="passwordHash">Hashed password</param>
-            <param name="securityStamp">Security stamp for tracking changes</param>
-        </member>
-        <member name="M:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.Boolean,System.String,System.String)">
-            <summary>
-            Represents user data transfer object (DTO)
-            </summary>
-            <param name="userId">Unique user identifier</param>
-            <param name="firstName">User's first name</param>
-            <param name="middleName">User's middle name</param>
-            <param name="lastName">User's last name</param>
-            <param name="email">User's email address</param>
-            <param name="normalizedEmail">Normalized email for case-insensitive comparison</param>
-            <param name="emailConfirmed">Indicates if email was confirmed</param>
-            <param name="passwordHash">Hashed password</param>
-            <param name="securityStamp">Security stamp for tracking changes</param>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.UserId">
-            <summary>
-            Gets the user identifier.
-            </summary>
-            <value>
-            The user identifier.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.FirstName">
-            <summary>
-            Gets the first name.
-            </summary>
-            <value>
-            The first name.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.MiddleName">
-            <summary>
-            Gets the name of the middle.
-            </summary>
-            <value>
-            The name of the middle.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.LastName">
-            <summary>
-            Gets the last name.
-            </summary>
-            <value>
-            The last name.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.Email">
-            <summary>
-            Gets the email.
-            </summary>
-            <value>
-            The email.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.NormalizedEmail">
-            <summary>
-            Gets the normalized email.
-            </summary>
-            <value>
-            The normalized email.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.EmailConfirmed">
-            <summary>
-            Gets a value indicating whether [email confirmed].
-            </summary>
-            <value>
-              <c>true</c> if [email confirmed]; otherwise, <c>false</c>.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.PasswordHash">
-            <summary>
-            Gets the password hash.
-            </summary>
-            <value>
-            The password hash.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.ApplicationUserDto.SecurityStamp">
-            <summary>
-            Gets the security stamp.
-            </summary>
-            <value>
-            The security stamp.
-            </value>
         </member>
         <member name="T:FleetManagementSystemApp.Business.Dtos.CompanyDto">
             <summary>
             Represents company data transfer object (DTO)
             </summary>
-            <param name="companyId">Unique company identifier</param>
-            <param name="companyName">Official company name</param>
-            <param name="phoneNum">Contact phone number</param>
-            <param name="inn">Taxpayer Identification Number (ИНН)</param>
-            <param name="kpp">Tax Registration Reason Code (КПП)</param>
-            <param name="ogrn">Primary State Registration Number (ОГРН)</param>
-            <param name="okpo">Russian Classification of Enterprises code (ОКПО)</param>
-            <param name="isMain">Indicates if this is the main company</param>
-        </member>
-        <member name="M:FleetManagementSystemApp.Business.Dtos.CompanyDto.#ctor(System.Guid,System.String,System.String,System.String,System.String,System.String,System.String,System.Boolean)">
-            <summary>
-            Represents company data transfer object (DTO)
-            </summary>
-            <param name="companyId">Unique company identifier</param>
-            <param name="companyName">Official company name</param>
-            <param name="phoneNum">Contact phone number</param>
-            <param name="inn">Taxpayer Identification Number (ИНН)</param>
-            <param name="kpp">Tax Registration Reason Code (КПП)</param>
-            <param name="ogrn">Primary State Registration Number (ОГРН)</param>
-            <param name="okpo">Russian Classification of Enterprises code (ОКПО)</param>
-            <param name="isMain">Indicates if this is the main company</param>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.CompanyDto.CompanyId">
-            <summary>
-            Gets the company identifier.
-            </summary>
-            <value>
-            The company identifier.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.CompanyDto.CompanyName">
-            <summary>
-            Gets the name of the company.
-            </summary>
-            <value>
-            The name of the company.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.CompanyDto.PhoneNum">
-            <summary>
-            Gets the phone number.
-            </summary>
-            <value>
-            The phone number.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.CompanyDto.Inn">
-            <summary>
-            Gets the inn.
-            </summary>
-            <value>
-            The inn.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.CompanyDto.Kpp">
-            <summary>
-            Gets the KPP.
-            </summary>
-            <value>
-            The KPP.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.CompanyDto.Ogrn">
-            <summary>
-            Gets the ogrn.
-            </summary>
-            <value>
-            The ogrn.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.CompanyDto.Okpo">
-            <summary>
-            Gets the okpo.
-            </summary>
-            <value>
-            The okpo.
-            </value>
-        </member>
-        <member name="P:FleetManagementSystemApp.Business.Dtos.CompanyDto.IsMain">
-            <summary>
-            Gets a value indicating whether this instance is main.
-            </summary>
-            <value>
-              <c>true</c> if this instance is main; otherwise, <c>false</c>.
-            </value>
         </member>
         <member name="T:FleetManagementSystemApp.Business.Dtos.DtoExtensions.AddressDtoExtentions">
             <summary>
@@ -284,7 +29,7 @@
             Converts address to dto.
             </summary>
             <param name="address">The address.</param>
-            <returns></returns>
+            <returns>AddressDto</returns>
         </member>
         <member name="M:FleetManagementSystemApp.Business.Dtos.DtoExtensions.AddressDtoExtentions.MapFromDto(FleetManagementSystemApp.Data.Entities.Address,FleetManagementSystemApp.Business.Dtos.AddressDto)">
             <summary>
@@ -292,7 +37,7 @@
             </summary>
             <param name="address">The address.</param>
             <param name="addressDto">The address dto.</param>
-            <returns></returns>
+            <returns>Address</returns>
         </member>
         <member name="T:FleetManagementSystemApp.Business.Dtos.DtoExtensions.ApplicationUserDtoExtentions">
             <summary>
@@ -326,7 +71,7 @@
             Converts to DTO.
             </summary>
             <param name="model">The model.</param>
-            <returns></returns>
+            <returns>TDto</returns>
         </member>
         <member name="M:FleetManagementSystemApp.Business.Dtos.DtoExtensions.BaseMapper`2.MapFromDto(`0,`1)">
             <summary>
@@ -334,42 +79,86 @@
             </summary>
             <param name="model">The model.</param>
             <param name="dto">The DTO.</param>
-            <returns></returns>
+            <returns>TModel</returns>
         </member>
         <member name="M:FleetManagementSystemApp.Business.Dtos.DtoExtensions.BaseMapper`2.ToDto(System.Collections.Generic.List{`0})">
             <summary>
             Converts list of models to DTO.
             </summary>
             <param name="models">The models.</param>
-            <returns></returns>
+            <returns>List<typeparamref name="TDto"/></returns>
         </member>
         <member name="M:FleetManagementSystemApp.Business.Dtos.DtoExtensions.BaseMapper`2.MapFromDto(System.Collections.Generic.List{`0},System.Collections.Generic.List{`1})">
             <summary>
             Maps list of models from DTO.
             </summary>
             <param name="models">The models.</param>
-            <param name="Dtos">The DTOs.</param>
-            <returns></returns>
+            <param name="dtos">The DTOs.</param>
+            <returns>List<typeparamref name="TModel"/></returns>
         </member>
-        <member name="T:FleetManagementSystemApp.Business.Dtos.DtoExtensions.CompanyDtoExtenctions">
+        <member name="T:FleetManagementSystemApp.Business.Dtos.DtoExtensions.CompanyDtoExtentions">
             <summary>
             Convertation methods for Company data to and from DTO model
             </summary>
         </member>
-        <member name="M:FleetManagementSystemApp.Business.Dtos.DtoExtensions.CompanyDtoExtenctions.ToDto(FleetManagementSystemApp.Data.Entities.Company)">
+        <member name="M:FleetManagementSystemApp.Business.Dtos.DtoExtensions.CompanyDtoExtentions.ToDto(FleetManagementSystemApp.Data.Entities.Company)">
             <summary>
             Converts company to dto.
             </summary>
             <param name="company">The company.</param>
             <returns></returns>
         </member>
-        <member name="M:FleetManagementSystemApp.Business.Dtos.DtoExtensions.CompanyDtoExtenctions.MapFromDto(FleetManagementSystemApp.Data.Entities.Company,FleetManagementSystemApp.Business.Dtos.CompanyDto)">
+        <member name="M:FleetManagementSystemApp.Business.Dtos.DtoExtensions.CompanyDtoExtentions.MapFromDto(FleetManagementSystemApp.Data.Entities.Company,FleetManagementSystemApp.Business.Dtos.CompanyDto)">
             <summary>
             Maps company from dto.
             </summary>
             <param name="company">The company.</param>
             <param name="companyDto">The company dto.</param>
             <returns></returns>
+        </member>
+        <member name="T:FleetManagementSystemApp.Business.Dtos.DtoExtensions.InsuranceDtoExtentions">
+            <summary>
+            Convertation methods for vehicle insurance policy data to and from DTO model
+            </summary>
+        </member>
+        <member name="T:FleetManagementSystemApp.Business.Dtos.DtoExtensions.PassportDtoExtentions">
+            <summary>
+            Convertation methods for vehicle passport data to and from DTO model
+            </summary>
+        </member>
+        <member name="T:FleetManagementSystemApp.Business.Dtos.DtoExtensions.RegistrationCertificateDtoExtentions">
+            <summary>
+            Convertation methods for vehicle registration certificate data to and from DTO model
+            </summary>
+        </member>
+        <member name="T:FleetManagementSystemApp.Business.Dtos.DtoExtensions.VehicleIdentificationDataDtoExtentions">
+            <summary>
+            Convertation methods for vehicle identification data to and from DTO model
+            </summary>
+        </member>
+        <member name="T:FleetManagementSystemApp.Business.Repositories.Abstract.IRepository`2">
+            <summary>
+            Generic interface for CRUD operations
+            </summary>
+            <typeparam name="T">Type of methods</typeparam>
+            <typeparam name="TKey">Type of parameters</typeparam>
+        </member>
+        <member name="T:FleetManagementSystemApp.Common.ErrorMapping">
+            <summary>
+            Provides mapping between error codes and corresponding view responses.
+            </summary>
+        </member>
+        <member name="P:FleetManagementSystemApp.Common.ErrorMapping.ViewError">
+            <summary>
+            Gets the dictionary mapping error codes to view responses.
+            </summary>
+            <value>
+            Dictionary where:
+            - Key is the error code (string)
+            - Value is a tuple containing:
+              - ViewName: name of the view to display
+              - StatusCode: HTTP status code to return
+            </value>
         </member>
         <member name="P:FleetManagementSystemApp.Data.Entities.Address.CompanyId">
             <summary>
@@ -391,9 +180,6 @@
             <summary>
             The foreign key
             </summary>
-            <value>
-            The users.
-            </value>
         </member>
         <member name="P:FleetManagementSystemApp.Data.Entities.Company.Address">
             <summary>
@@ -448,12 +234,44 @@
         <member name="M:FleetManagementSystemApp.Data.Migrations.fixMigration.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
-        <member name="T:FleetManagementSystemApp.Data.Repositories.Abstract.IRepository`2">
-            <summary>
-            Generic interface for CRUD operations
-            </summary>
-            <typeparam name="T">Type of methods</typeparam>
-            <typeparam name="TKey">Type of parameters</typeparam>
+        <member name="T:FleetManagementSystemApp.Data.Migrations.InfoCards">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.InfoCards.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.InfoCards.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.InfoCards.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:FleetManagementSystemApp.Data.Migrations.RemoveCompanyId1">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.RemoveCompanyId1.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.RemoveCompanyId1.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.RemoveCompanyId1.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.AddRowVersionProperly.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:FleetManagementSystemApp.Data.Migrations.UpdateColumnsDb">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.UpdateColumnsDb.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.UpdateColumnsDb.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.UpdateColumnsDb.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
         </member>
         <member name="T:FleetManagementSystemApp.Filters.ServiceResultFilter">
             <summary>

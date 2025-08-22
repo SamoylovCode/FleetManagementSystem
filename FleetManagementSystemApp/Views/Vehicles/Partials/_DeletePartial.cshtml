@@ -1,0 +1,17 @@
+﻿@model VehicleRemoveViewModel
+
+<form asp-controller="Vehicles" asp-action="DeleteConfirmed" asp-route-vehicleId="@Model.VehicleId" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for=VehicleId/>
+    <input type="hidden" name="RowVersion" value="@Convert.ToBase64String(Model.RowVersion ?? Array.Empty<byte>())" />
+    <div class="mb-4">
+        <h4>
+            Вы действительно хотите удалить данное ТС?
+        </h4>
+    </div>
+
+    <div class="d-flex justify-content-between mt-3">
+        <button type="submit" class="btn btn-prime w-100 py-2 mb-3 me-2">Удалить</button>
+        <button type="button" class="btn btn-prime w-100 py-2 mb-3" data-bs-dismiss="modal">Отмена</button>
+    </div>
+</form>

@@ -1,0 +1,15 @@
+﻿@model VehicleIdentificationDataViewModel
+
+<div>
+    <h5>Идентификационные данные ТС:</h5>
+    <dl class="mb-3">
+        <dt>@Html.DisplayNameFor(m => m.LicencePlate)</dt>
+        <dd>@Model.LicencePlate</dd>
+
+        <dt>@Html.DisplayNameFor(m => m.Vin)</dt>
+        <dd>@Model.Vin</dd>
+
+        <dt>@Html.DisplayNameFor(m => m.YearMade)</dt>
+        <dd>@Model.YearMade</dd>
+    </dl>
+</div>

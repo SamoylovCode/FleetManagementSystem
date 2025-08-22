@@ -17,7 +17,7 @@ namespace FleetManagementSystemApp.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.4")
+                .HasAnnotation("ProductVersion", "9.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -152,10 +152,6 @@ namespace FleetManagementSystemApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Inn")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -164,6 +160,10 @@ namespace FleetManagementSystemApp.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Kpp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Ogrn")
@@ -179,6 +179,133 @@ namespace FleetManagementSystemApp.Data.Migrations
                     b.HasKey("CompanyId");
 
                     b.ToTable("Companies");
+                });
+
+            modelBuilder.Entity("FleetManagementSystemApp.Data.Entities.Insurance", b =>
+                {
+                    b.Property<Guid>("InsuranceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("ExpDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("IssueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("IssuedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("InsuranceId");
+
+                    b.HasIndex("VehicleId")
+                        .IsUnique();
+
+                    b.ToTable("Insurances");
+                });
+
+            modelBuilder.Entity("FleetManagementSystemApp.Data.Entities.Passport", b =>
+                {
+                    b.Property<Guid>("PassportId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("IssueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("PassportId");
+
+                    b.HasIndex("VehicleId")
+                        .IsUnique();
+
+                    b.ToTable("Passports");
+                });
+
+            modelBuilder.Entity("FleetManagementSystemApp.Data.Entities.RegistrationCertificate", b =>
+                {
+                    b.Property<Guid>("RegCertificateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("IssueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("RegCertificateId");
+
+                    b.HasIndex("VehicleId")
+                        .IsUnique();
+
+                    b.ToTable("RegistrationCertificates");
+                });
+
+            modelBuilder.Entity("FleetManagementSystemApp.Data.Entities.Vehicle", b =>
+                {
+                    b.Property<Guid>("VehicleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsMain")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LicensePlate")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Vin")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly?>("YearMade")
+                        .HasColumnType("date");
+
+                    b.HasKey("VehicleId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("Vehicles");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -362,6 +489,50 @@ namespace FleetManagementSystemApp.Data.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("FleetManagementSystemApp.Data.Entities.Insurance", b =>
+                {
+                    b.HasOne("FleetManagementSystemApp.Data.Entities.Vehicle", "Vehicle")
+                        .WithOne("Insurance")
+                        .HasForeignKey("FleetManagementSystemApp.Data.Entities.Insurance", "VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("FleetManagementSystemApp.Data.Entities.Passport", b =>
+                {
+                    b.HasOne("FleetManagementSystemApp.Data.Entities.Vehicle", "Vehicle")
+                        .WithOne("Passport")
+                        .HasForeignKey("FleetManagementSystemApp.Data.Entities.Passport", "VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("FleetManagementSystemApp.Data.Entities.RegistrationCertificate", b =>
+                {
+                    b.HasOne("FleetManagementSystemApp.Data.Entities.Vehicle", "Vehicle")
+                        .WithOne("RegCertificate")
+                        .HasForeignKey("FleetManagementSystemApp.Data.Entities.RegistrationCertificate", "VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("FleetManagementSystemApp.Data.Entities.Vehicle", b =>
+                {
+                    b.HasOne("FleetManagementSystemApp.Data.Entities.Company", "Company")
+                        .WithMany("Vehicles")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -418,6 +589,20 @@ namespace FleetManagementSystemApp.Data.Migrations
                     b.Navigation("Address");
 
                     b.Navigation("Users");
+
+                    b.Navigation("Vehicles");
+                });
+
+            modelBuilder.Entity("FleetManagementSystemApp.Data.Entities.Vehicle", b =>
+                {
+                    b.Navigation("Insurance")
+                        .IsRequired();
+
+                    b.Navigation("Passport")
+                        .IsRequired();
+
+                    b.Navigation("RegCertificate")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

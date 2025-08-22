@@ -1,68 +1,28 @@
-﻿@{
-	ViewData["Title"] = "Страница входа, регистрации";
-}
-
-@ViewData["Title"]
-
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
 	@await Html.PartialAsync("_MetaPartial")
 	@await Html.PartialAsync("_CssPartial")
+
 </head>
-<body>
-	<!-- Login or registration page for unauthorized users -->
-	<div class="container-fluid">
-		<div class="row">
-			<div class="col">
-				@* <img src="~/images/default.jpg" class="img-fluid" alt="" /> *@
-			</div>
-			@* <button onclick="fillForm()" class="btn btn-sm btn-secondary">Заполнить тестовые данные</button> *@
-			<div class="col">
 
-				@RenderBody()
-			</div>
-		</div>
-	</div>
-
-	@await Html.PartialAsync("_ScriptsPartial")
-	<!-- <script>
-		function fillForm() {
-			const fields = {
-				'Email': 'test10@example.com',
-				'FirstName': 'Владимир',
-				'MiddleName': 'Сергеевич',
-				'LastName': 'Дробышевский',
-				'Password': '1434UIOp!',
-				'PasswordConfirm': '1434UIOp!',
-				'CompanyName': 'Антро',
-				'PhoneNum': '+79373256789',
-				'Region': 'Саратовская обл.',
-				'City': 'Саратов',
-				'Street': 'Чапаева',
-				'House': '44',
-				'Building': '1',
-				'Apartment': '1',
-				'Inn': '9964453772',
-				'Kpp': '424924432',
-				'Ogrn': '2310204631945',
-				'Okpo': '316244849'
-			};
-
-			Object.entries(fields).forEach(([id, value]) => {
-				const element = document.getElementById(id) || document.querySelector(`[name="${id}"]`);
-				if (element){
-					element.value = value;
-				}
-			});
-		}
-
-		Пытаемся заполнить сразу и при изменениях DOM
-		fillForm();
-		new MutationObserver(fillForm).observe(document.body, {
-			childList: true,
-			subtree: true
-		});
-	</script> -->
+<body class="main d-flex flex-column min-vh-100 m-0">
+    <div class="container-fluid d-flex flex-column flex-fill p-4">
+        <div class="row flex-fill gx-4 gy-4">
+            <div class="col-12 col-md-6 d-flex align-items-stretch">
+                <img src="~/images/default.jpg" class="img-fluid w-100 object-fit-cover" alt="" />
+            </div>
+            <div class="col-12 col-md-6 d-flex align-items-center justify-content-center">
+                <div class="container-fluid d-flex justify-content-center align-items-center flex-fill">
+                    <div class="col-12 col-sm-10 col-md-8 col-lg-8 col-xl-7">
+                        <div class="card p-4 p-md-3">
+                            @RenderBody()
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @await Html.PartialAsync("_ScriptsPartial")
 </body>
 </html>

@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace FleetManagementSystemApp.ViewModels.Account;
 
@@ -14,13 +13,13 @@ public class SetPassword
     [Required(ErrorMessage = "Не указан пароль")]
     [DataType(DataType.Password)]
     [UIHint("Password")]
-    [DisplayName("Пароль")]
+    [Display(Name = "Пароль")]
     public string Password { get; set; } = string.Empty;
 
     [Required]
     [DataType(DataType.Password)]
     [UIHint("Password")]
     [Compare("Password", ErrorMessage = "Пароли не совпадают")]
-    [DisplayName("Введите пароль еще раз")]
+    [Display(Name = "Введите пароль еще раз")]
     public string PasswordConfirm { get; set; } = string.Empty;
 }

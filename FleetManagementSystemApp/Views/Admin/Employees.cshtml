@@ -2,15 +2,16 @@
 
 @{
     Layout = "_MainLayout";
-    ViewData["Title"] = "Сотрудники компании";
 }
 
-<h1>@ViewData["Title"]</h1>
-<h5>Содержимое страницы Admin/Employees</h5>
+<h1>Сотрудники компании</h1>
 
-<button onclick="loadModal('Добавить сотрудника', '/Admin/AddUserPartial')">
-	Зарегистрировать сотрудника
-</button>
+<div class="d-inline-block mb-3">
+	<button class="btn btn-prime mb-3"
+		onclick="loadModal('Добавить сотрудника', '/Admin/AddUserPartial')">
+		Зарегистрировать сотрудника
+	</button>
+</div>
 
 <table>
 	<thead>
@@ -42,7 +43,7 @@
 
 <script>
 	$.ajax({
-		url: '/api/save-data',
+		url: '/Admin/AddUserPartial',
 		method: 'POST',
 		success: function(response) {
 			showSuccessToast('Данные сохранены!');

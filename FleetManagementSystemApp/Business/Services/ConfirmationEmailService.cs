@@ -1,15 +1,12 @@
 ﻿using FleetManagementSystemApp.Business.Services.Abstract;
-using FleetManagementSystemApp.Business.Services.Errors;
 using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Data.Entities;
 using Microsoft.AspNetCore.Identity;
-using Org.BouncyCastle.Bcpg.OpenPgp;
-using static FleetManagementSystemApp.Common.Extensions.Levels;
+
 using ILogger = Serilog.ILogger;
 
-/*Alies*/
-using Err = FleetManagementSystemApp.Business.Services.Errors.UserServiceErrors;
-using FleetManagementSystemApp.Common.Extensions;
+/*Aliases*/
+using ErCodes = FleetManagementSystemApp.Business.Services.Errors.UserServiceErrors;
 
 namespace FleetManagementSystemApp.Business.Services;
 
@@ -56,6 +53,6 @@ public class ConfirmationEmailService : IConfirmationService
 
         return result.IsSuccess
             ? Result.Success()
-            : Result.Failure(Err.SendEmailFailed(string.Empty));
+            : Result.Failure(ErCodes.SendEmailFailed(string.Empty));
     }
 }

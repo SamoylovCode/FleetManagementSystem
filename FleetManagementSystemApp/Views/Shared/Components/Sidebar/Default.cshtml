@@ -1,62 +1,59 @@
 ﻿@model SidebarViewModel
+<div id="" class="sidebar col d-flex flex-column h-100">
+    <div class="nav nav-pills flex-column mb-auto">
+        <ul class="nav nav-pills d-flex align-items-center flex-column mb-auto h-100">
+            <li class="nav-item w-100">
+                <a class="nav-link nav-link-active text-center fs-6 fs-md-4 fs-lg-3 fw-bold" asp-controller="Vehicles" asp-action="List">Автопарк</a>
+            </li>
+            <li class="nav-item w-100">
+                <a class="nav-link text-center fs-6 fs-md-4 fs-lg-3 fw-bold" asp-controller="" asp-action="">Путевой лист</a>
+            </li>
+            <li class="nav-item w-100">
+                <a class="nav-link text-center fs-6 fs-md-4 fs-lg-3 fw-bold" asp-controller="" asp-action="">Водители</a>
+            </li>
+            <li class="nav-item w-100">
+                <a class="nav-link text-center fs-6 fs-md-4 fs-lg-3 fw-bold" asp-controller="" asp-action="">Тех. состояние</a>
+            </li>
+            <li class="nav-item w-100">
+                <a class="nav-link text-center fs-6 fs-md-4 fs-lg-3 fw-bold" asp-controller="" asp-action="">ТОиР</a>
+            </li>
+            <li class="nav-item w-100">
+                <a class="nav-link text-center fs-6 fs-md-4 fs-lg-3 fw-bold" asp-controller="" asp-action="">ГСМ</a>
+            </li>
+            <div class="dropdown">
 
-<menu >
-	<ul class="nav flex-column">
-		<li class="nav-item">
-			<a class="nav-link active" asp-controller="Autopark" asp-action="Vehicles">Автопарк</a>
-		</li>
-		<li class="nav-item">
-			<a class="nav-link active" asp-controller="" asp-action="">Путевой лист</a>
-		</li>
-		<li class="nav-item">
-			<a class="nav-link active" asp-controller="" asp-action="">Водители</a>
-		</li>
-		<li class="nav-item">
-			<a class="nav-link active" asp-controller="" asp-action="">Тех. состояние</a>
-		</li>
-		<li class="nav-item">
-			<a class="nav-link active" asp-controller="" asp-action="">ТОиР</a>
-		</li>
-		<li class="nav-item">
-			<a class="nav-link active" asp-controller="" asp-action="">ГСМ</a>
-		</li>
-	</ul>
-	<hr/>
-	<ul class="nav flex-column">
-		<li class="nav-item">
-			@Model.UserName
-		</li>
-		<li class="nav-item">
-			@Model.UserRole
-		</li>
-		<li class="nav-item">
-			@Model.CompanyId
-		</li>
-		@{
-			if (@Model.UserRole == "admin")
-			{
-				<li class="nav-item">
-					<a class="nav-link active" asp-controller="Admin" asp-action="Employees">Пользователи</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link active" asp-controller="Admin" asp-action="CompanyInfo">Организация</a>
-				</li>
-			}
-		}
-		<hr class="my-1" />
-		<li class="nav-item">
-			<form method="post" asp-controller="Account" asp-action="Logout">
-				<button type="submit" class="nav-link btn btn-link py-0">
-					Выйти
-				</button>
-			</form>
-		</li>
-	</ul>
-</menu>
-@* <h2>Claim details</h2>
-<ul>
-	@foreach (var claim in User.Claims)
- 	{
- 		<li><strong>@claim.Type</strong>: @claim.Value</li>
- 	}
-</ul> *@
+            </div>
+            <li class="nav-item w-100">
+                <p class="text-center fs-6 fs-md-4 fs-lg-3 fw-bold">
+                    @Model.UserName
+                </p>
+            </li>
+            <li class="nav-item w-100">
+                <p class="text-center fs-6 fs-md-4 fs-lg-3 fw-bold">
+                    @Model.UserRole
+                </p>
+            </li>
+            @{
+                if (@Model.UserRole == "admin")
+                {
+                    <li class="nav-item w-100">
+                        <a class="nav-link text-center fs-6 fs-md-4 fs-lg-3 fw-bold" asp-controller="Admin" asp-action="Employees">Пользователи</a>
+                    </li>
+                    <li class="nav-item w-100">
+                        <a class="nav-link text-center fs-6 fs-md-4 fs-lg-3 fw-bold" asp-controller="Admin" asp-action="CompanyInfo">Организация</a>
+                    </li>
+                }
+            }
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+            <li class="nav-item mx-auto">
+                <form method="post" asp-controller="Account" asp-action="Logout" class="px-3">
+                    <button type="submit" class="nav-link btn btn-link py-0 fs-6 fs-md-4 fs-lg-3 fw-bold">
+                        Выйти
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+</div>

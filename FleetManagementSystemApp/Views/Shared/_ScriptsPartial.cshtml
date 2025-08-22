@@ -1,7 +1,16 @@
-﻿<script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+﻿<link href="~/lib/daterangepicker/daterangepicker.css" rel="stylesheet" />
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/moment/min/moment.min.js"></script>
+<script src="~/lib/daterangepicker/daterangepicker.js"></script>
+<script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+<script src="~/js/date-range-handler.js" asp-append-version="true"></script>
 <script src="~/js/modal-handler.js" asp-append-version="true"></script>
+<script src="~/js/main.js" asp-append-version="true"></script>
 
-
-
-@* <script src="~/lib/uikit/js/uikit.min.js"></script>
-<script src="~/lib/uikit/js/uikit-icons.min.js"></script> *@
+<script>
+    $(function () {
+        initDateRangeFields();
+        initDateFields();
+    });
+</script>

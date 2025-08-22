@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FleetManagementSystemApp.ViewModels;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
@@ -10,7 +11,10 @@ public class ServiceResultActionResult<T> : IActionResult
     private readonly ITempDataDictionaryFactory _tempData;
     private readonly ErrorMapping _errorMapping;
 
-    public ServiceResultActionResult(Result<T> result, ITempDataDictionaryFactory tempData, ErrorMapping errorMapping)
+    public ServiceResultActionResult(
+        Result<T> result,
+        ITempDataDictionaryFactory tempData,
+        ErrorMapping errorMapping)
     {
         _result = result;
         _tempData = tempData;
@@ -44,9 +48,13 @@ public class ServiceResultActionResult<T> : IActionResult
             var viewResult = new ViewResult
             {
                 ViewName = dictionary.ViewName,
-                ViewData = new ViewDataDictionary<string>(metadataProvider,context.ModelState)
+                ViewData = new ViewDataDictionary<ErrorViewModel>(metadataProvider,context.ModelState)
                 {
-                    Model = _result.Error.DevDescription
+                    Model = new ErrorViewModel
+                    {
+                        Code = _result.Error.Code,
+                        Description = _result.Error.UserDescription ?? ""
+                    }
                 },
                 TempData = _tempData.GetTempData(context.HttpContext)
             };

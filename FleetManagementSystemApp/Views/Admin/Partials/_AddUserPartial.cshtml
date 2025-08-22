@@ -1,0 +1,51 @@
+﻿@model AddUserViewModel
+
+<div class="add-user-modal">
+    <div class="mb-4">
+        @Html.ValidationSummary(
+            excludePropertyErrors: true,
+            message: "Пожалуйста, исправьте ошибки: ",
+            new { @class = "alert alert-danger" })
+    </div>
+
+    <form asp-controller="Admin" asp-action="AddUserPartial" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="mb-3">
+            <div class="mb-3">
+                <label class="form-label" asp-for="Email"></label>
+                <input class="form-control" name="Email" asp-for="Email" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" asp-for="FirstName"></label>
+                <input class="form-control" name="FirstName" asp-for="FirstName" />
+                <span asp-validation-for="FirstName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" asp-for="MiddleName"></label>
+                <input class="form-control" name="MiddleName" asp-for="MiddleName" />
+                <span asp-validation-for="MiddleName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" asp-for="LastName"></label>
+                <input class="form-control" name="LastName" asp-for="LastName" />
+                <span asp-validation-for="LastName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" asp-for="Role"></label>
+                <select class="form-select" name="Role" asp-for="Role" asp-items="ViewBag.RoleList"></select>
+                <span asp-validation-for="Role" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4 mb-3">
+                <button type="submit" class="btn btn-prime w-100 py-2 me-2">Зарегистрировать</button>
+                <button type="button" class="btn btn-prime w-100 py-2" data-bs-dismiss="modal">Отмена</button>
+            </div>
+        </div>
+    </form>
+</div>

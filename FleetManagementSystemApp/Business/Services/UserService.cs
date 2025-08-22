@@ -1,10 +1,10 @@
-﻿using FleetManagementSystemApp.Business.Dtos;
-using FleetManagementSystemApp.Business.Dtos.DtoExtensions;
+﻿using FleetManagementSystemApp.Business.Dtos.DtoExtensions;
+using FleetManagementSystemApp.Business.Dtos;
 using FleetManagementSystemApp.Business.Services.Abstract;
-using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Common.Extensions;
-using FleetManagementSystemApp.Data;
+using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Data.Entities;
+using FleetManagementSystemApp.Data;
 using FleetManagementSystemApp.Infrastructure.Caching;
 using FleetManagementSystemApp.Validators;
 using FleetManagementSystemApp.ViewModels.Account;
@@ -13,16 +13,14 @@ using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using StackExchange.Redis;
 using System.Security.Claims;
 using System.Transactions;
 
 using static FleetManagementSystemApp.Common.Extensions.Levels;
-using FleetManagementSystemApp.Business.Services.Errors;
 using ILogger = Serilog.ILogger;
 
-/*Alies*/
-using Err = FleetManagementSystemApp.Business.Services.Errors.UserServiceErrors;
+/*Aliases*/
+using ErCodes = FleetManagementSystemApp.Business.Services.Errors.UserServiceErrors;
 
 namespace FleetManagementSystemApp.Business.Services;
 
@@ -30,45 +28,42 @@ public class UserService : IUserService
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly ApplicationUserDtoExtentions _userMapper;
-    private readonly ICurrentUserService _currentUserService;
-    private readonly IServiceProvider _serviceProvider;
     private readonly IConfirmationService _confirmationEmailService;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly IHybridCache _hybridCache;
     private readonly ILogger _logger;
+    private readonly IServiceProvider _serviceProvider;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserAddingValidator _userAddValidator;
     private readonly UserCreationValidator _validator;
     private readonly UserLoginValidator _loginValidator;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IHybridCache _hybridCache;
-    private readonly IConnectionMultiplexer _redis;
-    private readonly UserAddingValidator _userAddValidator;
 
     public UserService(
-        ApplicationUserDtoExtentions userDto,
-        UserManager<ApplicationUser> userManager,
-        UserCreationValidator validator,
-        IServiceProvider serviceProvider,
         ApplicationDbContext dbContext,
-        UserLoginValidator loginValidator,
-        SignInManager<ApplicationUser> signInManager,
-        ICurrentUserService currentUserService,
+        ApplicationUserDtoExtentions userDto,
         IConfirmationService confirmationEmailService,
+        ICurrentUserService currentUserService,
         IHybridCache hybridCache,
-        IConnectionMultiplexer redis,
-        UserAddingValidator userAddValidator)
+        IServiceProvider serviceProvider,
+        SignInManager<ApplicationUser> signInManager,
+        UserAddingValidator userAddValidator,
+        UserCreationValidator validator,
+        UserLoginValidator loginValidator,
+        UserManager<ApplicationUser> userManager)
     {
-        _userMapper = userDto;
-        _userManager = userManager;
-        _validator = validator;
-        _serviceProvider = serviceProvider;
-        _dbContext = dbContext;
-        _loginValidator = loginValidator;
-        _signInManager = signInManager;
-        _currentUserService = currentUserService;
         _confirmationEmailService = confirmationEmailService;
-        _logger = Log.ForContext<UserService>();
+        _currentUserService = currentUserService;
+        _dbContext = dbContext;
         _hybridCache = hybridCache;
-        _redis = redis;
+        _logger = Log.ForContext<UserService>();
+        _loginValidator = loginValidator;
+        _serviceProvider = serviceProvider;
+        _signInManager = signInManager;
         _userAddValidator = userAddValidator;
+        _userManager = userManager;
+        _userMapper = userDto;
+        _validator = validator;
     }
 
     private async Task<List<Claim>> CreateUserClaims(ApplicationUser user, string? role = null)
@@ -77,7 +72,8 @@ public class UserService : IUserService
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.GivenName, $"{user.LastName} {user.FirstName} {user.MiddleName}".Trim()),
-            new Claim("CompanyId", user.CompanyId.ToString())
+            new Claim("CompanyId", user.CompanyId.ToString()),
+            new Claim("CompanyName", _dbContext.Companies.FirstOrDefault(c => c.CompanyId == user.CompanyId)?.Name!)
         };
 
         if (string.IsNullOrEmpty(role))
@@ -116,14 +112,14 @@ public class UserService : IUserService
         await _signInManager.RefreshSignInAsync(user);
     }
 
-    public async ValueTask<Result<List<ApplicationUserDto>>> GetAllUsersListAsync()
+    public async Task<Result<List<ApplicationUserDto>>> GetAllUsersListAsync()
     {
         var companyId = _currentUserService.CompanyId;
         _logger.Information("Getting list of company {CompanyId} users.", companyId);
         if (string.IsNullOrEmpty(companyId))
         {
-            _logger.Log(Err.CompanyNotFound(companyId), Warning);
-            return Result<List<ApplicationUserDto>>.Failure(Err.CompanyNotFound(null));
+            _logger.Log(ErCodes.CompanyNotFound(companyId), Warning);
+            return Result<List<ApplicationUserDto>>.Failure(ErCodes.CompanyNotFound(null));
         }
         
         // TODO: нельзя кешировать PII (DTO модель, содержащую email)
@@ -141,19 +137,22 @@ public class UserService : IUserService
             }
             else
             {
-                _logger.Log(Err.CompanyHasNoEmployees(companyId), Warning);
-                return Result<List<ApplicationUserDto>>.Failure(Err.CompanyHasNoEmployees(companyId));
+                _logger.Log(ErCodes.CompanyHasNoEmployees(companyId), Warning);
+                return Result<List<ApplicationUserDto>>.Failure(ErCodes.CompanyHasNoEmployees(companyId));
             }
-        }, companyId, TimeSpan.FromMinutes(1), $"users:list");
+        },
+        key: companyId,
+        ttl: TimeSpan.FromMinutes(1),
+        prefix: CachePrefixes.UsersList);
     }
 
-    public async ValueTask<Result<ApplicationUserDto>> GetUserByIdAsync(string userId)
+    public async Task<Result<ApplicationUserDto>> GetUserByIdAsync(string userId)
     {
         _logger.Information("Getting user {TargetUserId} data.", userId);
         if (string.IsNullOrWhiteSpace(userId))
         {
-            _logger.Log(Err.UserIdIsNullOrEmpty(), Warning);
-            return Result<ApplicationUserDto>.Failure(Err.UserIdIsNullOrEmpty());
+            _logger.Log(ErCodes.UserIdIsNullOrEmpty(), Warning);
+            return Result<ApplicationUserDto>.Failure(ErCodes.UserIdIsNullOrEmpty());
         }
 
         // TODO: нельзя кешировать PII (DTO модель, содержащую email)
@@ -168,19 +167,22 @@ public class UserService : IUserService
             }
             else
             {
-                _logger.Log(Err.UserNotFoundById(userId), Warning);
-                return Result<ApplicationUserDto>.Failure(Err.UserNotFoundById(userId));
+                _logger.Log(ErCodes.UserNotFoundById(userId), Warning);
+                return Result<ApplicationUserDto>.Failure(ErCodes.UserNotFoundById(userId));
             }
-        }, userId, TimeSpan.FromMinutes(5), "user:by-id");
+        },
+        key: userId,
+        ttl: TimeSpan.FromMinutes(5),
+        prefix: CachePrefixes.UserById);
     }
 
-    public async ValueTask<Result<ApplicationUserDto>> GetUserByEmailAsync(string email)
+    public async Task<Result<ApplicationUserDto>> GetUserByEmailAsync(string email)
     {
         _logger.Information("Getting user by email.");
         if (string.IsNullOrWhiteSpace(email))
         {
-            _logger.Log(Err.EmailIsNullOrEmpty(), Warning);
-            return Result<ApplicationUserDto>.Failure(Err.EmailIsNullOrEmpty());
+            _logger.Log(ErCodes.EmailIsNullOrEmpty(), Warning);
+            return Result<ApplicationUserDto>.Failure(ErCodes.EmailIsNullOrEmpty());
         }
 
         // TODO: нельзя кешировать PII (email, DTO модель, содержащую email)
@@ -198,13 +200,16 @@ public class UserService : IUserService
                 var maskedEmail = email is not null && email.IndexOf('@') is int idx && idx > 0
                         ? "***" + email.Substring(idx)
                         : "***";
-                _logger.Log(Err.EmailNotFound(maskedEmail), Warning);
-                return Result<ApplicationUserDto>.Failure(Err.EmailNotFound(maskedEmail));
+                _logger.Log(ErCodes.EmailNotFound(maskedEmail), Warning);
+                return Result<ApplicationUserDto>.Failure(ErCodes.EmailNotFound(maskedEmail));
             }
-        }, email, TimeSpan.FromMinutes(5), "user:by-email");
+        },
+        key: email,
+        ttl: TimeSpan.FromMinutes(5),
+        prefix: CachePrefixes.UserByEmail);
     }
 
-    public async ValueTask<Result> LoginUserAsync(LoginViewModel model)
+    public async Task<Result> LoginUserAsync(LoginViewModel model)
     {
         _logger.Information("User login.");
         var validationResult = _loginValidator.Validate(model);
@@ -227,15 +232,15 @@ public class UserService : IUserService
             var maskedEmail = model.Email is not null && model.Email.IndexOf('@') is int idx && idx > 0
                     ? "***" + model.Email.Substring(idx)
                     : "***";
-            _logger.Log(Err.UserNotFoundByEmail(maskedEmail));
-            return Result.Failure(Err.EmailNotFound(maskedEmail));
+            _logger.Log(ErCodes.UserNotFoundByEmail(maskedEmail));
+            return Result.Failure(ErCodes.EmailNotFound(maskedEmail));
         }
 
         var checkPassword = await _userManager.CheckPasswordAsync(user, model.Password);
         if (!checkPassword)
         {
-            _logger.Log(Err.PasswordDoesNotMatch(user.Id), Warning);
-            return Result.Failure(Err.PasswordDoesNotMatch(user.Id));
+            _logger.Log(ErCodes.PasswordDoesNotMatch(user.Id), Warning);
+            return Result.Failure(ErCodes.PasswordDoesNotMatch(user.Id));
         }
         await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
 
@@ -243,7 +248,7 @@ public class UserService : IUserService
         return Result.Success();
     }
 
-    public async ValueTask<Result> AddUserAsync(AddUserViewModel model, string scheme)
+    public async Task<Result> AddUserAsync(AddUserViewModel model, string scheme)
     {
         var validationResult = _userAddValidator.Validate(model);
         if (!validationResult.IsValid)
@@ -265,8 +270,8 @@ public class UserService : IUserService
         _logger.Information("Adding user in company {CompanyId}", currentUserCompanyId);
         if (string.IsNullOrEmpty(currentUserCompanyId))
         {
-            _logger.Log(Err.CompanyNotFound(currentUserCompanyId), Warning);
-            return Result.Failure(Err.CompanyNotFound(null));
+            _logger.Log(ErCodes.CompanyNotFound(currentUserCompanyId), Warning);
+            return Result.Failure(ErCodes.CompanyNotFound(null));
         }
 
         var user = new ApplicationUser
@@ -292,7 +297,7 @@ public class UserService : IUserService
                     "User registration failed. Error codes: {ErrorCode}. Error messages: {ErrorMessage}.",
                     exectuteUserCreationResult.Errors.Select(e => e.Code).Distinct(),
                     exectuteUserCreationResult.Errors.Select(e => e.DevDescription).Distinct());
-                return Result.Failure(Err.UserCreationFailed());
+                return Result.Failure(ErCodes.UserCreationFailed());
             }
 
         scope.Complete();
@@ -302,23 +307,23 @@ public class UserService : IUserService
 
         if (confirmEmailResult.IsFailure)
         {
-            _logger.Log(Err.SendEmailFailed(user.Id), Levels.Error);
-            return Result.Failure(Err.SendEmailFailed(user.Id));
+            _logger.Log(ErCodes.SendEmailFailed(user.Id), Levels.Error);
+            return Result.Failure(ErCodes.SendEmailFailed(user.Id));
         }
         
-        await _hybridCache.RemoveByPrefixAsync("users:list");
+        await _hybridCache.RemoveByPrefixAsync(CachePrefixes.UsersList);
 
         _logger.Information("User {TargetUserId} added to company {CompanyId} successfully.", user.Id, currentUserCompanyId);
         return Result.Success();
     }
 
-    public async ValueTask<Result> CreateUserAsync(RegisterViewModel model, string scheme)
+    public async Task<Result> CreateUserAsync(RegisterViewModel model, string scheme)
     {
         _logger.Information("Company and user registration.");
         var company = new Company
         {
             CompanyId = Guid.NewGuid(),
-            CompanyName = model.CompanyName,
+            Name = model.CompanyName,
             PhoneNum = model.PhoneNum,
             Inn = model.Inn,
             Kpp = model?.Kpp,
@@ -365,7 +370,7 @@ public class UserService : IUserService
                 "User registration failed. Error codes: {ErrorCode}. Error messages: {ErrorMessage}.",
                 executeUserCreationResult.Errors.Select(e => e.Code).Distinct(),
                 executeUserCreationResult.Errors.Select(e => e.DevDescription).Distinct());
-            return Result.Failure(Err.UserCreationFailed());
+            return Result.Failure(ErCodes.UserCreationFailed());
         }
 
         scope.Complete();
@@ -375,8 +380,8 @@ public class UserService : IUserService
 
         if (confirmEmailResult.IsFailure)
         {
-            _logger.Log(Err.SendEmailFailed(user.Id), Warning);
-            return Result.Failure(Err.SendEmailFailed(user.Id));
+            _logger.Log(ErCodes.SendEmailFailed(user.Id), Warning);
+            return Result.Failure(ErCodes.SendEmailFailed(user.Id));
         }
 
         _logger.Information("User {TargetUserId} registered successfully.", user.Id);
@@ -408,16 +413,16 @@ public class UserService : IUserService
 
         if (!createResult.Succeeded)
         {
-            _logger.Log(Err.UserCreationFailed(), Levels.Error);
-            return Result.Failure(Err.UserCreationFailed());
+            _logger.Log(ErCodes.UserCreationFailed(), Levels.Error);
+            return Result.Failure(ErCodes.UserCreationFailed());
         }
 
         _logger.Information("Adding role to user {TargetUserId}", user.Id);
         var addRoleResult = await _userManager.AddToRoleAsync(user, role);
         if (!addRoleResult.Succeeded)
         {
-            _logger.Log(Err.AddToRoleFailed(user.Id), Levels.Error);
-            return Result.Failure(Err.AddToRoleFailed(user.Id));
+            _logger.Log(ErCodes.AddToRoleFailed(user.Id), Levels.Error);
+            return Result.Failure(ErCodes.AddToRoleFailed(user.Id));
         }
 
         var claims = await CreateUserClaims(user, role);
@@ -425,30 +430,30 @@ public class UserService : IUserService
         var addClaimsResult = await _userManager.AddClaimsAsync(user, claims);
         if (!addClaimsResult.Succeeded)
         {
-            _logger.Log(Err.AddClaimsFailed(user.Id), Warning);
-            return Result.Failure(Err.AddClaimsFailed(user.Id));
+            _logger.Log(ErCodes.AddClaimsFailed(user.Id), Warning);
+            return Result.Failure(ErCodes.AddClaimsFailed(user.Id));
         }
 
-        _logger.Information("User registration completed successfully.");
+        _logger.Information("Execution user registration method completed successfully.");
         return Result.Success();
     }
 
-    public async ValueTask<Result> SetPasswordAsync(SetPassword model)
+    public async Task<Result> SetPasswordAsync(SetPassword model)
     {
         _logger.Information("Setting password for user account.");
 
-        if (model.UserId is null)
+        if (string.IsNullOrEmpty(model.UserId))
         {
-            _logger.Log(Err.UserIdIsNullOrEmpty(), Warning);
-            return Result.Failure(Err.UserIdIsNullOrEmpty());
+            _logger.Log(ErCodes.UserIdIsNullOrEmpty(), Warning);
+            return Result.Failure(ErCodes.UserIdIsNullOrEmpty());
         }
 
         _logger.Information("Searching user {TargetUserId} by ID.", model.UserId);
         var user = await _userManager.FindByIdAsync(model.UserId);
         if (user is null)
         {
-            _logger.Log(Err.UserNotFoundById(model.UserId), Warning);
-            return Result.Failure(Err.UserNotFoundById(model.UserId));
+            _logger.Log(ErCodes.UserNotFoundById(model.UserId), Warning);
+            return Result.Failure(ErCodes.UserNotFoundById(model.UserId));
         }
 
         _logger.Information("Confirmation email.");
@@ -461,16 +466,16 @@ public class UserService : IUserService
         var emailConfirmed = await _userManager.ConfirmEmailAsync(user, model.Token);
         if (!emailConfirmed.Succeeded)
         {
-            _logger.Log(Err.EmailConfirmedFailed(user.Id), Warning);
-            return Result.Failure(Err.EmailConfirmedFailed(user.Id));
+            _logger.Log(ErCodes.EmailConfirmedFailed(user.Id), Warning);
+            return Result.Failure(ErCodes.EmailConfirmedFailed(user.Id));
         }
 
         _logger.Information("Adding password to user {TargetUserId} account.", user.Id);
         var resultAddPassword = await _userManager.AddPasswordAsync(user, model.Password);
         if (!resultAddPassword.Succeeded)
         {
-            _logger.Log(Err.AddPasswordFailed(user.Id), Warning);
-            return Result.Failure(Err.AddPasswordFailed(user.Id));
+            _logger.Log(ErCodes.AddPasswordFailed(user.Id), Warning);
+            return Result.Failure(ErCodes.AddPasswordFailed(user.Id));
         }
 
         scope.Complete();
@@ -483,7 +488,6 @@ public class UserService : IUserService
     //public async ValueTask<Result> UpdateUserDataAsync(UpdateUserDataViewModel model)
     //{
     //    await UpdateUserClaimsAsync(user);
-    //    //Do something
     //}
 
     //public ValueTask<Result> ResetUserPasswordAsync(ResetPasswordViewModel model)

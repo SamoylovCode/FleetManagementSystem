@@ -1,0 +1,84 @@
+﻿@model List<VehicleDto>
+
+@{
+    Layout = "_MainLayout";
+}
+
+<h1>Автопарк</h1>
+<h5>Содержимое страницы Vehicles</h5>
+<p>Здесь представлен список ТС организации</p>
+
+@{
+	if (User.IsInRole("admin") || User.IsInRole("manager"))
+	{
+		<form asp-controller="Vehicles" asp-action="Create" method="get" style="display:inline">
+			<div class="d-flex gap-2 mt-4 mb-4">
+				<button type="submit" class="btn btn-prime py-2">Добавить ТС</button>
+			</div>
+		</form>
+	}
+}
+
+<div class="mb-4">
+	@Html.ValidationSummary(
+		excludePropertyErrors: true,
+		message: "Извините, в результате текущей операции возникли ошибки.\nПожалуйста, попробуйте ещё раз или повторите попытку позднее.",
+		new { @class = "alert alert-danger" })
+</div>
+
+<table>
+	<thead>
+		<tr>
+			@* <th>#</th>
+			<th>Марка, модель</th>
+			<th>ГРЗ</th>
+			<th>Колонна</th>
+			<th>Закрепленные водители</th>
+			<th>Путевой лист</th>
+            <th>Срок действия путевого листа</th>
+			<th>Маршрут</th>
+			<th>Страховой полис</th>
+			<th>Диагностическая карта</th>
+			<th>Пробег</th>
+			<th>Наработка</th>
+			<th>Состояние</th> *@
+
+			<th>#</th>
+			<th>ГРЗ</th>
+			<th>VIN</th>
+			<th>Год изготовления</th>
+		</tr>
+	</thead>
+	<tbody>
+		@{
+			int counter = 1;
+			foreach (var v in Model)
+			{
+				<tr>
+					<td>@(counter++)</td>
+					<td>
+						<a asp-controller="Vehicles" asp-action="Details" asp-route-vehicleId=@v.VehicleId>@v.LicensePlate</a>
+					</td>
+					<td>
+                        <a asp-controller="Vehicles" asp-action="Details" asp-route-vehicleId=@v.VehicleId>@v.Vin</a>
+					</td>
+					<td>
+                        <a asp-controller="Vehicles" asp-action="Details" asp-route-vehicleId=@v.VehicleId>@v.YearMade</a>
+					</td>
+					<td>
+						<button
+							class="btn"
+							onclick="loadModal('Удалить транспортное средство?', '/vehicles/delete/@v.VehicleId')"
+							onsubmit="return submitDelete(this)">
+							<i class="bi text-danger bi-trash me-2"></i>
+						</button>
+					</td>
+				</tr>
+			}
+		}
+	</tbody>
+</table>
+
+<script>
+
+</script>

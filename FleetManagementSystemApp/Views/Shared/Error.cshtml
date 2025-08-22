@@ -1,13 +1,14 @@
-﻿@using FleetManagementSystemApp.ViewModels
-@model ErrorViewModel
-@{
-    ViewData["Title"] = "Error";
-}
+﻿@model ErrorViewModel
+
 @{
     Layout = "_EmptyLayout";
 }
+
 <div class="d-flex flex-column justify-content-center align-items-center min-vh-100 text-center p-3">
-    <h1 class="text-danger">Ошибка.</h1>
-    <h6 class="text-body">Произошла ошибка в результате Вашего запроса.</h6>
-    <h5 class="text-body">@Model.Description</h5>
+    <h1 class="text-danger mb-3 mb-md-4">Ошибка!</h1>
+    <h6 class="text-body mb-3">В результате запроса произошла ошибка.</h6>
+    <h5 class="text-body mb-3">@Model.Description</h5>
+    <h6 class="m-5">
+        <a class="link-offset-1-hover" asp-controller="Account" asp-action="Login">Нажмите, чтобы перейти на страницу входа.</a>
+    </h6>
 </div>

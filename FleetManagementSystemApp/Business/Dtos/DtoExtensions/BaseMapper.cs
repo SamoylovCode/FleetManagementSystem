@@ -3,18 +3,26 @@ using FleetManagementSystemApp.Common;
 
 namespace FleetManagementSystemApp.Business.Dtos.DtoExtensions;
 
+public interface IBaseMapper<TModel, TDto>
+{
+    public Result<TDto> ToDto(TModel model);
+    public Result<TModel> MapFromDto(TModel model, TDto dto);
+    public Result<List<TDto>> ToDto(List<TModel> models);
+    public Result<List<TModel>> MapFromDto(List<TModel> models, List<TDto> dtos);
+}
+
 /// <summary>
 /// Convertation methods any data to and from DTO model
 /// </summary>
 /// <typeparam name="TModel">The type of the model.</typeparam>
 /// <typeparam name="TDto">The type of the DTO.</typeparam>
-public abstract class BaseMapper<TModel, TDto>
+public abstract class BaseMapper<TModel, TDto> : IBaseMapper<TModel, TDto>
 {
     /// <summary>
     /// Converts to DTO.
     /// </summary>
     /// <param name="model">The model.</param>
-    /// <returns></returns>
+    /// <returns>TDto</returns>
     public abstract Result<TDto> ToDto(TModel model);
 
     /// <summary>
@@ -22,14 +30,14 @@ public abstract class BaseMapper<TModel, TDto>
     /// </summary>
     /// <param name="model">The model.</param>
     /// <param name="dto">The DTO.</param>
-    /// <returns></returns>
+    /// <returns>TModel</returns>
     public abstract Result<TModel> MapFromDto(TModel model, TDto dto);
 
     /// <summary>
     /// Converts list of models to DTO.
     /// </summary>
     /// <param name="models">The models.</param>
-    /// <returns></returns>
+    /// <returns>List<typeparamref name="TDto"/></returns>
     public Result<List<TDto>> ToDto(List<TModel> models)
     {
         List<TDto> result = new List<TDto>();
@@ -57,11 +65,11 @@ public abstract class BaseMapper<TModel, TDto>
     /// Maps list of models from DTO.
     /// </summary>
     /// <param name="models">The models.</param>
-    /// <param name="Dtos">The DTOs.</param>
-    /// <returns></returns>
-    public Result<List<TModel>> MapFromDto(List<TModel> models, List<TDto> Dtos)
+    /// <param name="dtos">The DTOs.</param>
+    /// <returns>List<typeparamref name="TModel"/></returns>
+    public Result<List<TModel>> MapFromDto(List<TModel> models, List<TDto> dtos)
     {
-        if (models.Count != Dtos.Count)
+        if (models.Count != dtos.Count)
         {
             return Result<List<TModel>>.Failure(MapperErrors.ModelsSizeMismatch());
         }
@@ -71,7 +79,7 @@ public abstract class BaseMapper<TModel, TDto>
 
         for (int i = 0; i < models.Count; i++)
         {
-            var mapResult = MapFromDto(models[i], Dtos[i]);
+            var mapResult = MapFromDto(models[i], dtos[i]);
             if (mapResult.IsSuccess)
             {
                 result.Add(mapResult.Value);

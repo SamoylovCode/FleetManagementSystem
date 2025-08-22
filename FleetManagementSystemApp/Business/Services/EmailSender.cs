@@ -1,11 +1,11 @@
-﻿using MailKit.Net.Smtp;
-using FleetManagementSystemApp.Configs;
-using MimeKit;
-using FleetManagementSystemApp.Business.Services.Abstract;
-using FleetManagementSystemApp.Common;
+﻿using FleetManagementSystemApp.Business.Services.Abstract;
 using FleetManagementSystemApp.Business.Services.Errors;
-using ILogger = Serilog.ILogger;
 using FleetManagementSystemApp.Common.Extensions;
+using FleetManagementSystemApp.Common;
+using FleetManagementSystemApp.Configs;
+using ILogger = Serilog.ILogger;
+using MailKit.Net.Smtp;
+using MimeKit;
 
 namespace FleetManagementSystemApp.Business.Services;
 

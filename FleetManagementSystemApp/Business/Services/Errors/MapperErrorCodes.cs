@@ -4,5 +4,5 @@ public static class MapperErrorCodes
 {
     public const string ModelsSizeMismatch = "ModelsSizeMismatch";
     public const string ModelIsNull = "ModelIsNull";
-    public const string ConversionFailed = "ConversionFailed";
+    public const string MappingFailed = "MappingFailed";
 }

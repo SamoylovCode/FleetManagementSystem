@@ -1,0 +1,15 @@
+﻿@model InsuranceViewModel
+
+<div>
+    <h5>Страховой полис:</h5>
+    <dl class="mb-3">
+        <dt>@Html.DisplayNameFor(m => m.Number)</dt>
+        <dd>@Model.Number</dd>
+
+        <dt>@Html.DisplayNameFor(m => m.IssuedBy)</dt>
+        <dd>@Model.IssuedBy</dd>
+
+        <dt>@Html.DisplayNameFor(m => m.PeriodString)</dt>
+        <dd>@Model.PeriodString</dd>
+    </dl>
+</div>

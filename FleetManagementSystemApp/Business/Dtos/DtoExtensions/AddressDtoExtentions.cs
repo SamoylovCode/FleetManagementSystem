@@ -13,7 +13,7 @@ public class AddressDtoExtentions : BaseMapper<Address, AddressDto>
     /// Converts address to dto.
     /// </summary>
     /// <param name="address">The address.</param>
-    /// <returns></returns>
+    /// <returns>AddressDto</returns>
     public override Result<AddressDto> ToDto(Address address)
     {
         if (address is null)
@@ -21,16 +21,14 @@ public class AddressDtoExtentions : BaseMapper<Address, AddressDto>
             return Result<AddressDto>.Failure(MapperErrors.ModelIsNull());
         }
 
-        var addressDto = new AddressDto
-        (
+        var addressDto = new AddressDto(
             address.AddressId,
             address.Region,
             address.City,
             address.Street,
             address.House,
             address.Building,
-            address.Apartment
-        );
+            address.Apartment);
 
         return Result<AddressDto>.Success(addressDto);
     }
@@ -40,12 +38,17 @@ public class AddressDtoExtentions : BaseMapper<Address, AddressDto>
     /// </summary>
     /// <param name="address">The address.</param>
     /// <param name="addressDto">The address dto.</param>
-    /// <returns></returns>
+    /// <returns>Address</returns>
     public override Result<Address> MapFromDto(Address address, AddressDto addressDto)
     {
         if (address is null)
         {
             return Result<Address>.Failure(MapperErrors.ModelIsNull());
+        }
+
+        if (addressDto is null)
+        {
+            return Result<Address>.Failure(MapperErrors.DtoIsNull());
         }
 
         address.AddressId = addressDto.AddressId;

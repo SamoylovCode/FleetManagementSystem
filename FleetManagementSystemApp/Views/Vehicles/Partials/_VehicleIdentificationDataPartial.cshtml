@@ -1,0 +1,21 @@
+﻿@model VehicleIdentificationDataViewModel
+
+<prefixed-field tag="input" type="hidden" asp-for="VehicleId" value="@Model.VehicleId" />
+<input type="hidden" name="VehicleIdentificationData.RowVersion" value="@Convert.ToBase64String(Model.RowVersion ?? Array.Empty<byte>())" />
+
+<h5>Идентификационные данные ТС:</h5>
+<div class="form-group mb-3">
+    <prefixed-field tag="label" class="form-label" asp-for="LicencePlate">@Model.LicencePlate</prefixed-field>
+    <prefixed-field tag="input" class="form-control" asp-for="LicencePlate" />
+    <prefixed-field tag="span" asp-validation-for="LicencePlate" class="text-danger" />
+</div>
+<div class="form-group mb-3">
+    <prefixed-field tag="label" class="form-label" asp-for="Vin">@Model.Vin</prefixed-field>
+    <prefixed-field tag="input" class="form-control" asp-for="Vin" />
+    <prefixed-field tag="span" asp-validation-for="Vin" class="text-danger" />
+</div>
+<div class="form-group mb-3">
+    <prefixed-field tag="label" class="form-label" asp-for="YearMade">@Model.YearMade</prefixed-field>
+    <prefixed-field tag="input" type="date" class="form-control" asp-for="YearMade" />
+    <prefixed-field tag="span" asp-validation-for="YearMade" class="text-danger" />
+</div>

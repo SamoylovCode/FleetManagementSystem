@@ -1,12 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel;
+
 namespace FleetManagementSystemApp.ViewModels.Account;
 
 public class ResetUserPasswordViewModel
 {
     [Required(ErrorMessage = "Не указан адрес электронной почты")]
     [EmailAddress(ErrorMessage = "Некорректный адрес")]
-    [DisplayName("E-mail")]
+    [Display(Name = "E-mail")]
     [StringLength(50)]
     public string Email { get; set; } = null!;
 

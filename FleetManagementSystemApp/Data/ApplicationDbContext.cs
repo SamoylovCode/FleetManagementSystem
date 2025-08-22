@@ -7,8 +7,11 @@ namespace FleetManagementSystemApp.Data;
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole, string>
 {
     public DbSet<Address> Addresses { get; set; } = null!;
-
     public DbSet<Company> Companies { get; set; } = null!;
+    public DbSet<Vehicle> Vehicles { get; set; } = null!;
+    public DbSet<Passport> Passports { get; set; } = null!;
+    public DbSet<Insurance> Insurances { get; set; } = null!;
+    public DbSet<RegistrationCertificate> RegistrationCertificates { get; set; } = null!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -57,5 +60,51 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithOne(a => a.Company)
             .HasForeignKey<Address>(a => a.CompanyId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Company>()
+            .HasMany(c => c.Vehicles)
+            .WithOne(v => v.Company)
+            .HasForeignKey(v => v.CompanyId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Vehicle>()
+            .HasOne(v => v.Passport)
+            .WithOne(p => p.Vehicle)
+            .HasForeignKey<Passport>(p => p.VehicleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Vehicle>()
+            .HasOne(v => v.Insurance)
+            .WithOne(i => i.Vehicle)
+            .HasForeignKey<Insurance>(i => i.VehicleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Vehicle>()
+            .HasOne(v => v.RegCertificate)
+            .WithOne(r => r.Vehicle)
+            .HasForeignKey<RegistrationCertificate>(r => r.VehicleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        /* Concurrency properies */
+
+        builder.Entity<Vehicle>()
+            .Property(v => v.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken();
+
+        builder.Entity<Insurance>()
+            .Property(i => i.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken();
+
+        builder.Entity<Passport>()
+            .Property(p => p.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken();
+
+        builder.Entity<RegistrationCertificate>()
+            .Property(r => r.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken();
     }
 }

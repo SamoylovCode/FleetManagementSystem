@@ -1,13 +1,13 @@
 ﻿@{
     Layout = "_EmptyLayout";
-    ViewData["Title"] = "Подтверждение выполнено";
 }
-
-<h2 style="text-align:center; margin-top: 30px;">Регистрация завершена</h2>
-<p style="text-align:center;">Сейчас вы будете перенаправлены на главную страницу...</p>
-<p>Если автоматическое перенаправление не произошло, нажмите следующую ссылку: <a asp-action="Login" asp-controller="Account"></a></p>
+<div class="d-flex flex-column justify-content-center align-items-center min-vh-100 text-center p-3">
+    <h1>Регистрация завершена</h1>
+    <h5>Сейчас Вы будете перенаправлены на главную страницу...</h5>
+    <h6>Если автоматическое перенаправление не произошло, нажмите следующую ссылку: <a asp-action="Login" asp-controller="Account"></a></h6>
+</div>
 <script>
     setTimeout(function () {
         window.location.href = "/Account/Login";
-    }, 3000);
+    }, 5000);
 </script>

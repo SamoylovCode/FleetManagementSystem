@@ -20,7 +20,8 @@ public class SidebarViewComponent : ViewComponent
         {
             UserName = _currentUserService.UserName,
             UserRole = _currentUserService.UserRole,
-            CompanyId = _currentUserService.CompanyId.ToString()
+            CompanyId = _currentUserService.CompanyId,
+            CompanyName = _currentUserService.CompanyName
         });
     }
 }

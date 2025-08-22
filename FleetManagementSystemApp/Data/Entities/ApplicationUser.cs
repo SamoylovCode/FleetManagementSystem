@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
+
 namespace FleetManagementSystemApp.Data.Entities;
 
 public class ApplicationUser : IdentityUser

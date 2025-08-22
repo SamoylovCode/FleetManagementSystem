@@ -1,0 +1,47 @@
+﻿@model LoginViewModel
+
+@{
+	Layout = "_AuthLayout";
+}
+
+<h1 class="text-center mb-4">Войти в учетную запись</h1>
+<h5 class="text-secondary mb-4">Пожалуйста, авторизуйтесь</h5>
+<div class="mb-4">
+    @Html.ValidationSummary(
+        excludePropertyErrors: true,
+        message: "Пожалуйста, исправьте ошибки: ",
+        new {@class="alert alert-danger"})
+</div>
+
+<form asp-controller="Account" asp-action="Login" method="post">
+    @Html.AntiForgeryToken()
+    <div class="mb-3">
+        <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+        <div class="mb-3">
+            <label class="form-label" asp-for="Email"></label>
+            <input class="form-control" name="Email" asp-for="Email" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" asp-for="Password"></label>
+            <input class="form-control" name="Password" asp-for="Password" type="password" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="form-check">
+                <input class="form-check-input" asp-for="RememberMe" />
+                <label class="form-check-label" asp-for="RememberMe">Запомнить меня</label>
+            </div>
+            <a class="text-body text-decoration-none" asp-controller="Account" asp-action="ResetPassword">Забыли пароль?</a>
+        </div>
+
+        <button type="submit" class="btn btn-prime w-100 py-2 mb-3 mt-3">Войти</button>
+
+    </div>
+</form>
+<div class="text-center mt-3">
+    <div class="text-body-tertiary">Нет учетной записи? <a class="text-body-tertiary text-decoration-underline" asp-controller="Account" asp-action="Register">Зарегистрируйтесь</a></div>
+</div>

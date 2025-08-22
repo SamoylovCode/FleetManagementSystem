@@ -21,8 +21,7 @@ public class ApplicationUserDtoExtentions : BaseMapper<ApplicationUser, Applicat
             return Result<ApplicationUserDto>.Failure(MapperErrors.ModelIsNull());
         }
 
-        var userDto = new ApplicationUserDto
-        (
+        var userDto = new ApplicationUserDto(
             user.Id,
             user.FirstName,
             user.MiddleName,
@@ -31,8 +30,7 @@ public class ApplicationUserDtoExtentions : BaseMapper<ApplicationUser, Applicat
             user.NormalizedEmail,
             user.EmailConfirmed,
             user.PasswordHash,
-            user.SecurityStamp
-        );
+            user.SecurityStamp);
 
         return Result<ApplicationUserDto>.Success(userDto);
     }
@@ -48,6 +46,11 @@ public class ApplicationUserDtoExtentions : BaseMapper<ApplicationUser, Applicat
         if (user is null)
         {
             return Result<ApplicationUser>.Failure(MapperErrors.ModelIsNull());
+        }
+
+        if (userDto is null)
+        {
+            return Result<ApplicationUser>.Failure(MapperErrors.DtoIsNull());
         }
 
         user.Id = userDto.UserId;
