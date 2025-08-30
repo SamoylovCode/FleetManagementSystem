@@ -47,6 +47,7 @@
 			<th>ГРЗ</th>
 			<th>VIN</th>
 			<th>Год изготовления</th>
+			<th>Удалить</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -66,19 +67,18 @@
                         <a asp-controller="Vehicles" asp-action="Details" asp-route-vehicleId=@v.VehicleId>@v.YearMade</a>
 					</td>
 					<td>
-						<button
-							class="btn"
-							onclick="loadModal('Удалить транспортное средство?', '/vehicles/delete/@v.VehicleId')"
-							onsubmit="return submitDelete(this)">
-							<i class="bi text-danger bi-trash me-2"></i>
-						</button>
+						@if (User.IsInRole("admin") || User.IsInRole("manager"))
+						{
+							<button
+								class="btn"
+								onclick="loadModal('Удалить транспортное средство?', '/vehicles/delete/@v.VehicleId')"
+								onsubmit="return submitDelete(this)">
+								<i class="bi text-danger bi-trash me-2"></i>
+							</button>
+						}
 					</td>
 				</tr>
 			}
 		}
 	</tbody>
 </table>
-
-<script>
-
-</script>

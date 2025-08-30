@@ -103,17 +103,20 @@ builder.Services.AddScoped<VehicleDtoExtentions>();
 builder.Services.AddScoped<PassportDtoExtentions>();
 builder.Services.AddScoped<InsuranceDtoExtentions>();
 builder.Services.AddScoped<RegistrationCertificateDtoExtentions>();
+builder.Services.AddScoped<CertificateTechInspectionExtentions>();
 builder.Services.AddScoped<VehicleIdentificationDataDtoExtentions>();
 builder.Services.AddScoped<IBaseMapper<Vehicle, VehicleDto>, VehicleDtoExtentions>();
 builder.Services.AddScoped<IBaseMapper<Passport, PassportDto>, PassportDtoExtentions>();
 builder.Services.AddScoped<IBaseMapper<Insurance, InsuranceDto>, InsuranceDtoExtentions>();
 builder.Services.AddScoped<IBaseMapper<RegistrationCertificate, RegistrationCertificateDto>, RegistrationCertificateDtoExtentions>();
+builder.Services.AddScoped<IBaseMapper<CertificateTechInspection, CertificateTechInspectionDto>, CertificateTechInspectionExtentions>();
 builder.Services.AddScoped<ISeederDatabase, SeederDatabase>();
 builder.Services.AddScoped<ISubModelHandlerFactory, SubModelHandlerFactory>();
 builder.Services.AddScoped<ISubModelHandler, PassportSubModelHandler>();
 builder.Services.AddScoped<ISubModelHandler, InsuranceSubModelHandler>();
 builder.Services.AddScoped<ISubModelHandler, RegistrationCertificateSubModelHandler>();
 builder.Services.AddScoped<ISubModelHandler, VehicleIdentificationDataSubModelHandler>();
+builder.Services.AddScoped<ISubModelHandler, CertificateTechInspectionSubModelHandler>();
 // Configuring DataProtection key storage; change this in production!
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(@"C:\keys\"))

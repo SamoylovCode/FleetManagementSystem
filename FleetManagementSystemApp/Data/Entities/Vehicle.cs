@@ -19,4 +19,5 @@ public class Vehicle
     public Insurance Insurance { get; set; }
     public Passport Passport { get; set; }
     public RegistrationCertificate RegCertificate { get; set; }
+    public CertificateTechInspection CertificateTechInspection { get; set; }
 }

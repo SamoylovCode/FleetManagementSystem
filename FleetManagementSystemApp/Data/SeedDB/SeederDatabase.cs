@@ -208,6 +208,41 @@ public class SeederDatabase : ISeederDatabase
                     });
             }
 
+            if (!_dbContext.CertificateTechInspections.Any())
+            {
+                await _dbContext.CertificateTechInspections.AddRangeAsync(
+                    new CertificateTechInspection
+                    {
+                        CertificateTechInspectionId = Guid.NewGuid(),
+                        CertificateTechInspectionNum = "012345678912345",
+                        CertificateTechInspectionIssuedBy = "ООО Техосмотр",
+                        CertificateTechInspectionIssueDate = new DateOnly(2025, 6, 1),
+                        CertificateTechInspectionExpDate = new DateOnly(2025, 6, 1),
+                        RowVersion = Array.Empty<byte>(),
+                        VehicleId = vehicle1.VehicleId
+                    },
+                    new CertificateTechInspection
+                    {
+                        CertificateTechInspectionId = Guid.NewGuid(),
+                        CertificateTechInspectionNum = "123456789012345",
+                        CertificateTechInspectionIssuedBy = "ООО Техосмотр",
+                        CertificateTechInspectionIssueDate = new DateOnly(2025, 6, 1),
+                        CertificateTechInspectionExpDate = new DateOnly(2025, 6, 1),
+                        RowVersion = Array.Empty<byte>(),
+                        VehicleId = vehicle1.VehicleId
+                    },
+                    new CertificateTechInspection
+                    {
+                        CertificateTechInspectionId = Guid.NewGuid(),
+                        CertificateTechInspectionNum = "234567890123456",
+                        CertificateTechInspectionIssuedBy = "ООО Техосмотр",
+                        CertificateTechInspectionIssueDate = new DateOnly(2025, 6, 1),
+                        CertificateTechInspectionExpDate = new DateOnly(2025, 6, 1),
+                        RowVersion = Array.Empty<byte>(),
+                        VehicleId = vehicle1.VehicleId
+                    });
+            }
+
             await _dbContext.SaveChangesAsync();
             _logger.Information("Database seeding completed successfully.");
         }

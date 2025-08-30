@@ -1,4 +1,5 @@
 ﻿@model SidebarViewModel
+
 <div id="" class="sidebar col d-flex flex-column h-100">
     <div class="nav nav-pills flex-column mb-auto">
         <ul class="nav nav-pills d-flex align-items-center flex-column mb-auto h-100">
@@ -20,9 +21,11 @@
             <li class="nav-item w-100">
                 <a class="nav-link text-center fs-6 fs-md-4 fs-lg-3 fw-bold" asp-controller="" asp-action="">ГСМ</a>
             </li>
-            <div class="dropdown">
+            @* <div class="dropdown">
 
-            </div>
+                TODO: доделать раскрывающийся список
+
+            </div> *@
             <li class="nav-item w-100">
                 <p class="text-center fs-6 fs-md-4 fs-lg-3 fw-bold">
                     @Model.UserName

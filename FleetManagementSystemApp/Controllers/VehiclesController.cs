@@ -159,7 +159,7 @@ public class VehiclesController : Controller
     [Route("delete/{vehicleId}")]
     public async Task<IActionResult> Delete(Guid vehicleId)
     {
-        var getVehicleResult = await _vehicleService.GetVehicleAsync(vehicleId);
+        var getVehicleResult = await _vehicleService.GetVehicleByIdAsync(vehicleId);
 
         return await getVehicleResult.ToActionResultAsync(
             onSuccess: () =>

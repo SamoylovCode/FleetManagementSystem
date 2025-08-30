@@ -23,19 +23,22 @@ public class VehicleService : IVehicleService
     private readonly IHybridCache _hybridCache;
     private readonly ICurrentUserService _currentUserService;
     private readonly VehicleDtoExtentions _vehicleMapper;
+    private readonly DateRangeParser _dateRangeParser;
 
     public VehicleService(
         ApplicationDbContext dbContext,
         ILogger logger,
         IHybridCache hybridCache,
         ICurrentUserService currentUserService,
-        VehicleDtoExtentions vehicleMapper)
+        VehicleDtoExtentions vehicleMapper,
+        DateRangeParser dateRangeParser)
     {
         _dbContext = dbContext;
         _logger = logger;
         _hybridCache = hybridCache;
         _currentUserService = currentUserService;
         _vehicleMapper = vehicleMapper;
+        _dateRangeParser = dateRangeParser;
     }
 
     public IQueryable<Vehicle> VehicleQueryWithAll()
@@ -43,7 +46,8 @@ public class VehicleService : IVehicleService
         return _dbContext.Vehicles
             .Include(v => v.Passport)
             .Include(v => v.Insurance)
-            .Include(v => v.RegCertificate);
+            .Include(v => v.RegCertificate)
+            .Include(v => v.CertificateTechInspection);
     }
 
     public VehiclePageViewModel GetNewVehiclePage(Guid? id = null)
@@ -87,6 +91,13 @@ public class VehicleService : IVehicleService
                 VehicleId = vehicleId,
                 RegCertificateId = Guid.NewGuid(),
                 IssueDate = DateOnly.FromDateTime(DateTime.UtcNow)
+            },
+            CertificateTechInspection = new CertificateTechInspectionViewModel
+            {
+                VehicleId = vehicleId,
+                CertificateTechInspectionId = Guid.NewGuid(),
+                CertificateTechInspectionIssueDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                CertificateTechInspectionExpDate = DateOnly.FromDateTime(DateTime.UtcNow)
             }
         };
 
@@ -128,7 +139,7 @@ public class VehicleService : IVehicleService
         return Result<List<VehicleDto>>.Success(dtoList);
     }
 
-    public async Task<Result<Vehicle>> GetVehicleAsync(Guid vehicleId)
+    public async Task<Result<Vehicle>> GetVehicleByIdAsync(Guid vehicleId)
     {
         if (vehicleId == Guid.Empty)
         {
@@ -157,6 +168,9 @@ public class VehicleService : IVehicleService
             return Result.Failure(CommonErrors.ParamIsNullOrEmpty(typeof(VehicleService)));
         }
 
+        _ = _dateRangeParser.TryParse(viewModel.Insurance.PeriodString, out DateOnly? startInsuranceDate, out DateOnly? endInsuranceDate);
+        _ = _dateRangeParser.TryParse(viewModel.CertificateTechInspection.PeriodString, out DateOnly? startCertificationDate, out DateOnly? endCertificationDate);
+
         using (var transaction = await _dbContext.Database.BeginTransactionAsync())
         {
             try
@@ -182,8 +196,8 @@ public class VehicleService : IVehicleService
                     InsuranceId = viewModel.Insurance.InsuranceId,
                     Number = viewModel.Insurance.Number,
                     IssuedBy = viewModel.Insurance.IssuedBy,
-                    IssueDate = viewModel.Insurance.IssueDate,
-                    ExpDate = viewModel.Insurance.ExpDate
+                    IssueDate = startInsuranceDate,
+                    ExpDate = endInsuranceDate
                 };
 
                 var passport = new Passport
@@ -202,11 +216,22 @@ public class VehicleService : IVehicleService
                     IssueDate = viewModel.RegistrationCertificate.IssueDate
                 };
 
+                var certTechInspection = new CertificateTechInspection
+                {
+                    VehicleId= vehicle.VehicleId,
+                    CertificateTechInspectionId = viewModel.CertificateTechInspection.CertificateTechInspectionId,
+                    CertificateTechInspectionNum = viewModel.CertificateTechInspection.CertificateTechInspectionNum,
+                    CertificateTechInspectionIssuedBy = viewModel.CertificateTechInspection.CertificateTechInspectionIssuedBy,
+                    CertificateTechInspectionIssueDate = startCertificationDate,
+                    CertificateTechInspectionExpDate = endCertificationDate
+                };
+
                 var entities = new List<object>()
                 {
                     insurance,
                     passport,
-                    regCertificate
+                    regCertificate,
+                    certTechInspection
                 };
 
                 await _dbContext.AddRangeAsync(entities);

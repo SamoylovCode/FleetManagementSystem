@@ -66,7 +66,7 @@ public class UserService : IUserService
         _validator = validator;
     }
 
-    private async Task<List<Claim>> CreateUserClaims(ApplicationUser user, string? role = null)
+    private async Task<List<Claim>> GetOrCreateUserClaims(ApplicationUser user, string? role = null)
     {
         _logger.Information("Creating user account claims.");
         var claims = new List<Claim>
@@ -105,7 +105,7 @@ public class UserService : IUserService
         var currentClaims = await _userManager.GetClaimsAsync(user);
         await _userManager.RemoveClaimsAsync(user, currentClaims);
 
-        var newClaims = await CreateUserClaims(user, null);
+        var newClaims = await GetOrCreateUserClaims(user, null);
         await _userManager.AddClaimsAsync(user, newClaims);
 
         // Update current session
@@ -425,7 +425,7 @@ public class UserService : IUserService
             return Result.Failure(ErCodes.AddToRoleFailed(user.Id));
         }
 
-        var claims = await CreateUserClaims(user, role);
+        var claims = await GetOrCreateUserClaims(user, role);
         _logger.Information("Adding created claims to user {TargetUserId} account.", user.Id);
         var addClaimsResult = await _userManager.AddClaimsAsync(user, claims);
         if (!addClaimsResult.Succeeded)

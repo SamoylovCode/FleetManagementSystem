@@ -10,4 +10,5 @@ public class VehiclePageViewModel : IAggregateViewModel
     public PassportViewModel Passport { get; set; }
     public InsuranceViewModel Insurance { get; set; }
     public RegistrationCertificateViewModel RegistrationCertificate { get; set; }
+    public CertificateTechInspectionViewModel CertificateTechInspection { get; set; }
 }

@@ -20,6 +20,6 @@ public class InsuranceViewModel : ISubModel
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     [Display(Name = "Срок действия полиса")]
-    [DateRangeBinder(nameof(IssueDate), nameof(ExpDate))]
+    //[DateRangeBinder(nameof(IssueDate), nameof(ExpDate))]
     public string? PeriodString { get; set; } //только во view model
 }

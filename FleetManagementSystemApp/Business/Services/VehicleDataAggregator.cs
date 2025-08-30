@@ -55,6 +55,7 @@ public class VehicleDataAggregator : IVehicleDataAggregator
             var insuranceMapper = _serviceProvider.GetRequiredService<IBaseMapper<Insurance, InsuranceDto>>();
             var passportMapper = _serviceProvider.GetRequiredService<IBaseMapper<Passport, PassportDto>>();
             var regCertificateMapper = _serviceProvider.GetRequiredService<IBaseMapper<RegistrationCertificate, RegistrationCertificateDto>>();
+            var certificateTechInspectionMapper = _serviceProvider.GetRequiredService<IBaseMapper<CertificateTechInspection, CertificateTechInspectionDto>>();
 
             _logger.Information("Mapping to DTO models.");
             var data = new VehicleDataDto
@@ -62,7 +63,8 @@ public class VehicleDataAggregator : IVehicleDataAggregator
                 Vehicle = vehicleMapper.ToDto(vehicle).Value,
                 Insurance = insuranceMapper.ToDto(vehicle.Insurance).Value,
                 Passport = passportMapper.ToDto(vehicle.Passport).Value,
-                Registration = regCertificateMapper.ToDto(vehicle.RegCertificate).Value
+                Registration = regCertificateMapper.ToDto(vehicle.RegCertificate).Value,
+                CertificateTechInspection = certificateTechInspectionMapper.ToDto(vehicle.CertificateTechInspection).Value
             };
 
             return data;

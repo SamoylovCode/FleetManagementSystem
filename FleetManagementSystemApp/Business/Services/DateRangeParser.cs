@@ -49,6 +49,7 @@ public class DateRangeParser
     {
         if (string.IsNullOrEmpty(startDate) || string.IsNullOrEmpty(endDate))
         {
+            _logger.Log(CommonErrors.ParamIsNullOrEmpty(typeof(DateRangeParser)), Warning);
             return string.Empty;
         }
 

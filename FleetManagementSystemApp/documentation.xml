@@ -273,6 +273,18 @@
         <member name="M:FleetManagementSystemApp.Data.Migrations.UpdateColumnsDb.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:FleetManagementSystemApp.Data.Migrations.AddCertificateTechInspection">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.AddCertificateTechInspection.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.AddCertificateTechInspection.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:FleetManagementSystemApp.Data.Migrations.AddCertificateTechInspection.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:FleetManagementSystemApp.Filters.ServiceResultFilter">
             <summary>
             Автоматическая обертка каждого экшена

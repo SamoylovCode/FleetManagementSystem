@@ -18,7 +18,8 @@
     <input type="hidden" name="Passport.Prefix" asp-for="@Model.Passport.Prefix" />
     <input type="hidden" name="Insurance.Prefix" asp-for="@Model.Insurance.Prefix" />
     <input type="hidden" name="RegistrationCertificate.Prefix" asp-for="@Model.RegistrationCertificate.Prefix" />
-    
+    <input type="hidden" name="CertificateTechInspection.Prefix" asp-for="@Model.CertificateTechInspection.Prefix" />
+
     @await Html.PartialAsync(
         "Partials/_VehicleIdentificationDataPartial",
         Model?.VehicleIdentificationData,
@@ -49,6 +50,14 @@
         new ViewDataDictionary(ViewData)
         {
             TemplateInfo = { HtmlFieldPrefix = Model?.RegistrationCertificate?.Prefix }
+        })
+
+    @await Html.PartialAsync(
+        "Partials/_CertificateTechInspectionPartial",
+        Model?.CertificateTechInspection,
+        new ViewDataDictionary(ViewData)
+        {
+            TemplateInfo = { HtmlFieldPrefix = Model?.CertificateTechInspection?.Prefix }
         })
 </form>
 

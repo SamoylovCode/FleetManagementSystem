@@ -122,7 +122,7 @@ public class AccountController : Controller
                 _logger.Error("User registration error. Errors: {@Errors}", errors);
                 foreach (var e in errors)
                 {
-                    ModelState.AddModelError(e.Code ?? "", e.UserDescription);
+                    ModelState.AddModelError(e.Code ?? "", e.UserDescription!);
                 }
 
                 return View(model);

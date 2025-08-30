@@ -12,6 +12,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Passport> Passports { get; set; } = null!;
     public DbSet<Insurance> Insurances { get; set; } = null!;
     public DbSet<RegistrationCertificate> RegistrationCertificates { get; set; } = null!;
+    public DbSet<CertificateTechInspection> CertificateTechInspections { get; set; } = null!;
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -85,6 +86,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .HasForeignKey<RegistrationCertificate>(r => r.VehicleId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Entity<Vehicle>()
+            .HasOne(v => v.CertificateTechInspection)
+            .WithOne(r => r.Vehicle)
+            .HasForeignKey<CertificateTechInspection>(r => r.VehicleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         /* Concurrency properies */
 
         builder.Entity<Vehicle>()
@@ -104,6 +111,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
 
         builder.Entity<RegistrationCertificate>()
             .Property(r => r.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken();
+
+        builder.Entity<CertificateTechInspection>()
+            .Property(c => c.RowVersion)
             .IsRowVersion()
             .IsConcurrencyToken();
     }
