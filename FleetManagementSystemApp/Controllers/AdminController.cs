@@ -1,4 +1,5 @@
-﻿using FleetManagementSystemApp.Business.Services.Abstract;
+﻿using FleetManagementSystemApp.Business.Dtos;
+using FleetManagementSystemApp.Business.Services.Abstract;
 using FleetManagementSystemApp.Common.Extensions;
 using FleetManagementSystemApp.Data.Entities;
 using FleetManagementSystemApp.ViewModels.Admin;
@@ -23,7 +24,20 @@ public class AdminController : Controller
     public async Task<IActionResult> Employees()
     {
         var employees = await _userService.GetAllUsersListAsync();
-        return View(employees.Value);
+        return employees.ToActionResult(
+            onSuccess: () =>
+            {
+                return View(employees.Value);
+            },
+            onFailure: (errors) =>
+            {
+                foreach (var e in errors)
+                {
+                    ModelState.AddModelError(e.Code ?? "", e.UserDescription);
+                }
+
+                return View(new List<ApplicationUserDto>());
+            });
     }
 
     [HttpGet("company-info")]

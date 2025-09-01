@@ -1,10 +1,11 @@
-﻿using FleetManagementSystemApp.Business.Dtos.DtoExtensions;
-using FleetManagementSystemApp.Business.Dtos;
+﻿using FleetManagementSystemApp.Business.Dtos;
+using FleetManagementSystemApp.Business.Dtos.DtoExtensions;
 using FleetManagementSystemApp.Business.Services.Abstract;
-using FleetManagementSystemApp.Common.Extensions;
+using FleetManagementSystemApp.Business.Services.Errors;
 using FleetManagementSystemApp.Common;
-using FleetManagementSystemApp.Data.Entities;
+using FleetManagementSystemApp.Common.Extensions;
 using FleetManagementSystemApp.Data;
+using FleetManagementSystemApp.Data.Entities;
 using FleetManagementSystemApp.Infrastructure.Caching;
 using FleetManagementSystemApp.Validators;
 using FleetManagementSystemApp.ViewModels.Account;
@@ -15,12 +16,8 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Security.Claims;
 using System.Transactions;
-
 using static FleetManagementSystemApp.Common.Extensions.Levels;
 using ILogger = Serilog.ILogger;
-
-/*Aliases*/
-using ErCodes = FleetManagementSystemApp.Business.Services.Errors.UserServiceErrors;
 
 namespace FleetManagementSystemApp.Business.Services;
 
@@ -118,12 +115,12 @@ public class UserService : IUserService
         _logger.Information("Getting list of company {CompanyId} users.", companyId);
         if (string.IsNullOrEmpty(companyId))
         {
-            _logger.Log(ErCodes.CompanyNotFound(companyId), Warning);
-            return Result<List<ApplicationUserDto>>.Failure(ErCodes.CompanyNotFound(null));
+            _logger.Log(UserServiceErrors.CompanyNotFound(companyId), Warning);
+            return Result<List<ApplicationUserDto>>.Failure(UserServiceErrors.CompanyNotFound(null));
         }
         
         // TODO: нельзя кешировать PII (DTO модель, содержащую email)
-        return await _hybridCache.GetOrAddAsync(async () =>
+        var cachedUserListDto = await _hybridCache.GetOrAddAsync(async () =>
         {
             var users = await _userManager.Users
                 .Where(u => u.CompanyId == Guid.Parse(companyId))
@@ -133,17 +130,19 @@ public class UserService : IUserService
             if(users.Count > 0)
             {
                 _logger.Information("Returned list of {UsersCount} company {CompanyId} users.", users.Count, companyId);
-                return _userMapper.ToDto(users);
+                return _userMapper.ToDto(users).Value;
             }
             else
             {
-                _logger.Log(ErCodes.CompanyHasNoEmployees(companyId), Warning);
-                return Result<List<ApplicationUserDto>>.Failure(ErCodes.CompanyHasNoEmployees(companyId));
+                _logger.Log(UserServiceErrors.CompanyHasNoEmployees(companyId), Info);
+                return new List<ApplicationUserDto>();
             }
         },
         key: companyId,
         ttl: TimeSpan.FromMinutes(1),
         prefix: CachePrefixes.UsersList);
+
+        return Result<List<ApplicationUserDto>>.Success(cachedUserListDto);
     }
 
     public async Task<Result<ApplicationUserDto>> GetUserByIdAsync(string userId)
@@ -151,29 +150,31 @@ public class UserService : IUserService
         _logger.Information("Getting user {TargetUserId} data.", userId);
         if (string.IsNullOrWhiteSpace(userId))
         {
-            _logger.Log(ErCodes.UserIdIsNullOrEmpty(), Warning);
-            return Result<ApplicationUserDto>.Failure(ErCodes.UserIdIsNullOrEmpty());
+            _logger.Log(UserServiceErrors.UserIdIsNullOrEmpty(), Warning);
+            return Result<ApplicationUserDto>.Failure(UserServiceErrors.UserIdIsNullOrEmpty());
         }
 
         // TODO: нельзя кешировать PII (DTO модель, содержащую email)
-        return await _hybridCache.GetOrAddAsync(async () =>
+        var cachedUserDto = await _hybridCache.GetOrAddAsync(async () =>
         {
             var user = await _userManager.FindByIdAsync(userId);
 
             if(user is not null)
             {
                 _logger.Information("User {TargetUserId} is found, returned ApplicationUserDto instance.", userId);
-                return _userMapper.ToDto(user);
+                return _userMapper.ToDto(user).Value;
             }
             else
             {
-                _logger.Log(ErCodes.UserNotFoundById(userId), Warning);
-                return Result<ApplicationUserDto>.Failure(ErCodes.UserNotFoundById(userId));
+                _logger.Log(UserServiceErrors.UserNotFoundById(userId), Warning);
+                return new ApplicationUserDto();
             }
         },
         key: userId,
         ttl: TimeSpan.FromMinutes(5),
         prefix: CachePrefixes.UserById);
+
+        return Result<ApplicationUserDto>.Success(cachedUserDto);
     }
 
     public async Task<Result<ApplicationUserDto>> GetUserByEmailAsync(string email)
@@ -181,32 +182,40 @@ public class UserService : IUserService
         _logger.Information("Getting user by email.");
         if (string.IsNullOrWhiteSpace(email))
         {
-            _logger.Log(ErCodes.EmailIsNullOrEmpty(), Warning);
-            return Result<ApplicationUserDto>.Failure(ErCodes.EmailIsNullOrEmpty());
+            _logger.Log(UserServiceErrors.EmailIsNullOrEmpty(), Warning);
+            return Result<ApplicationUserDto>.Failure(UserServiceErrors.EmailIsNullOrEmpty());
         }
+        
+        var maskedEmail = email is not null && email.IndexOf('@') is int idx && idx > 0
+                ? "***" + email.Substring(idx)
+                : "***";
 
         // TODO: нельзя кешировать PII (email, DTO модель, содержащую email)
-        return await _hybridCache.GetOrAddAsync(async () =>
+        var cachedUserDto = await _hybridCache.GetOrAddAsync(async () =>
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await _userManager.FindByEmailAsync(email!);
 
             if(user is not null)
             {
-                _logger.Information("User {TargetUserId} is found, returned ApplicationUserDto instance.");
-                return _userMapper.ToDto(user);
+                _logger.Information("User {TargetUserId} is found, returned ApplicationUserDto instance.", user.Id);
+                return _userMapper.ToDto(user).Value;
             }
             else
             {
-                var maskedEmail = email is not null && email.IndexOf('@') is int idx && idx > 0
-                        ? "***" + email.Substring(idx)
-                        : "***";
-                _logger.Log(ErCodes.EmailNotFound(maskedEmail), Warning);
-                return Result<ApplicationUserDto>.Failure(ErCodes.EmailNotFound(maskedEmail));
+                _logger.Log(UserServiceErrors.EmailNotFound(maskedEmail), Warning);
+                return new ApplicationUserDto();
             }
         },
-        key: email,
+        key: email!,
         ttl: TimeSpan.FromMinutes(5),
         prefix: CachePrefixes.UserByEmail);
+        
+        if (cachedUserDto == null)
+        {
+            return Result<ApplicationUserDto>.Failure(UserServiceErrors.EmailNotFound(maskedEmail));
+        }
+
+        return Result<ApplicationUserDto>.Success(cachedUserDto);
     }
 
     public async Task<Result> LoginUserAsync(LoginViewModel model)
@@ -232,15 +241,15 @@ public class UserService : IUserService
             var maskedEmail = model.Email is not null && model.Email.IndexOf('@') is int idx && idx > 0
                     ? "***" + model.Email.Substring(idx)
                     : "***";
-            _logger.Log(ErCodes.UserNotFoundByEmail(maskedEmail));
-            return Result.Failure(ErCodes.EmailNotFound(maskedEmail));
+            _logger.Log(UserServiceErrors.UserNotFoundByEmail(maskedEmail));
+            return Result.Failure(UserServiceErrors.EmailNotFound(maskedEmail));
         }
 
         var checkPassword = await _userManager.CheckPasswordAsync(user, model.Password);
         if (!checkPassword)
         {
-            _logger.Log(ErCodes.PasswordDoesNotMatch(user.Id), Warning);
-            return Result.Failure(ErCodes.PasswordDoesNotMatch(user.Id));
+            _logger.Log(UserServiceErrors.PasswordDoesNotMatch(user.Id), Warning);
+            return Result.Failure(UserServiceErrors.PasswordDoesNotMatch(user.Id));
         }
         await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
 
@@ -270,8 +279,8 @@ public class UserService : IUserService
         _logger.Information("Adding user in company {CompanyId}", currentUserCompanyId);
         if (string.IsNullOrEmpty(currentUserCompanyId))
         {
-            _logger.Log(ErCodes.CompanyNotFound(currentUserCompanyId), Warning);
-            return Result.Failure(ErCodes.CompanyNotFound(null));
+            _logger.Log(UserServiceErrors.CompanyNotFound(currentUserCompanyId), Warning);
+            return Result.Failure(UserServiceErrors.CompanyNotFound(null));
         }
 
         var user = new ApplicationUser
@@ -291,28 +300,33 @@ public class UserService : IUserService
             TransactionScopeAsyncFlowOption.Enabled);
 
         var exectuteUserCreationResult = await ExecuteUserCreationAsync(user, null, model.Role);
-            if (exectuteUserCreationResult.IsFailure)
-            {
-                _logger.Error(
-                    "User registration failed. Error codes: {ErrorCode}. Error messages: {ErrorMessage}.",
-                    exectuteUserCreationResult.Errors.Select(e => e.Code).Distinct(),
-                    exectuteUserCreationResult.Errors.Select(e => e.DevDescription).Distinct());
-                return Result.Failure(ErCodes.UserCreationFailed());
-            }
+        
+        if (exectuteUserCreationResult.IsFailure)
+        {
+            _logger.Error(
+                "User registration failed. Error codes: {ErrorCode}. Error messages: {ErrorMessage}.",
+                exectuteUserCreationResult.Errors.Select(e => e.Code).Distinct(),
+                exectuteUserCreationResult.Errors.Select(e => e.DevDescription).Distinct());
+            return Result.Failure(UserServiceErrors.UserCreationFailed());
+        }
 
         scope.Complete();
+
+        _logger.Debug("Removing cache by key {CurrentUserCompanyId} and prefix {UserList}.", currentUserCompanyId, CachePrefixes.UsersList);
+        await _hybridCache.RemoveAsync(currentUserCompanyId, CachePrefixes.UsersList);
+        _logger.Debug("Removing cache by prefix {UserList}.", currentUserCompanyId, CachePrefixes.UsersList);
+        await _hybridCache.RemoveByPrefixAsync(CachePrefixes.UsersList);
+        await _hybridCache.DumpPrefixesAsync();
 
         _logger.Information("Sending user {TargetUserId} registration confirmation email.", user.Id);
         var confirmEmailResult = await _confirmationEmailService.SendConfirmationAsync(user, scheme);
 
         if (confirmEmailResult.IsFailure)
         {
-            _logger.Log(ErCodes.SendEmailFailed(user.Id), Levels.Error);
-            return Result.Failure(ErCodes.SendEmailFailed(user.Id));
+            _logger.Log(UserServiceErrors.SendEmailFailed(user.Id), Levels.Error);
+            return Result.Failure(UserServiceErrors.SendEmailFailed(user.Id));
         }
         
-        await _hybridCache.RemoveByPrefixAsync(CachePrefixes.UsersList);
-
         _logger.Information("User {TargetUserId} added to company {CompanyId} successfully.", user.Id, currentUserCompanyId);
         return Result.Success();
     }
@@ -370,7 +384,7 @@ public class UserService : IUserService
                 "User registration failed. Error codes: {ErrorCode}. Error messages: {ErrorMessage}.",
                 executeUserCreationResult.Errors.Select(e => e.Code).Distinct(),
                 executeUserCreationResult.Errors.Select(e => e.DevDescription).Distinct());
-            return Result.Failure(ErCodes.UserCreationFailed());
+            return Result.Failure(UserServiceErrors.UserCreationFailed());
         }
 
         scope.Complete();
@@ -380,8 +394,8 @@ public class UserService : IUserService
 
         if (confirmEmailResult.IsFailure)
         {
-            _logger.Log(ErCodes.SendEmailFailed(user.Id), Warning);
-            return Result.Failure(ErCodes.SendEmailFailed(user.Id));
+            _logger.Log(UserServiceErrors.SendEmailFailed(user.Id), Warning);
+            return Result.Failure(UserServiceErrors.SendEmailFailed(user.Id));
         }
 
         _logger.Information("User {TargetUserId} registered successfully.", user.Id);
@@ -413,16 +427,16 @@ public class UserService : IUserService
 
         if (!createResult.Succeeded)
         {
-            _logger.Log(ErCodes.UserCreationFailed(), Levels.Error);
-            return Result.Failure(ErCodes.UserCreationFailed());
+            _logger.Log(UserServiceErrors.UserCreationFailed(), Levels.Error);
+            return Result.Failure(UserServiceErrors.UserCreationFailed());
         }
 
         _logger.Information("Adding role to user {TargetUserId}", user.Id);
         var addRoleResult = await _userManager.AddToRoleAsync(user, role);
         if (!addRoleResult.Succeeded)
         {
-            _logger.Log(ErCodes.AddToRoleFailed(user.Id), Levels.Error);
-            return Result.Failure(ErCodes.AddToRoleFailed(user.Id));
+            _logger.Log(UserServiceErrors.AddToRoleFailed(user.Id), Levels.Error);
+            return Result.Failure(UserServiceErrors.AddToRoleFailed(user.Id));
         }
 
         var claims = await GetOrCreateUserClaims(user, role);
@@ -430,8 +444,8 @@ public class UserService : IUserService
         var addClaimsResult = await _userManager.AddClaimsAsync(user, claims);
         if (!addClaimsResult.Succeeded)
         {
-            _logger.Log(ErCodes.AddClaimsFailed(user.Id), Warning);
-            return Result.Failure(ErCodes.AddClaimsFailed(user.Id));
+            _logger.Log(UserServiceErrors.AddClaimsFailed(user.Id), Warning);
+            return Result.Failure(UserServiceErrors.AddClaimsFailed(user.Id));
         }
 
         _logger.Information("Execution user registration method completed successfully.");
@@ -444,16 +458,16 @@ public class UserService : IUserService
 
         if (string.IsNullOrEmpty(model.UserId))
         {
-            _logger.Log(ErCodes.UserIdIsNullOrEmpty(), Warning);
-            return Result.Failure(ErCodes.UserIdIsNullOrEmpty());
+            _logger.Log(UserServiceErrors.UserIdIsNullOrEmpty(), Warning);
+            return Result.Failure(UserServiceErrors.UserIdIsNullOrEmpty());
         }
 
         _logger.Information("Searching user {TargetUserId} by ID.", model.UserId);
         var user = await _userManager.FindByIdAsync(model.UserId);
         if (user is null)
         {
-            _logger.Log(ErCodes.UserNotFoundById(model.UserId), Warning);
-            return Result.Failure(ErCodes.UserNotFoundById(model.UserId));
+            _logger.Log(UserServiceErrors.UserNotFoundById(model.UserId), Warning);
+            return Result.Failure(UserServiceErrors.UserNotFoundById(model.UserId));
         }
 
         _logger.Information("Confirmation email.");
@@ -466,16 +480,16 @@ public class UserService : IUserService
         var emailConfirmed = await _userManager.ConfirmEmailAsync(user, model.Token);
         if (!emailConfirmed.Succeeded)
         {
-            _logger.Log(ErCodes.EmailConfirmedFailed(user.Id), Warning);
-            return Result.Failure(ErCodes.EmailConfirmedFailed(user.Id));
+            _logger.Log(UserServiceErrors.EmailConfirmedFailed(user.Id), Warning);
+            return Result.Failure(UserServiceErrors.EmailConfirmedFailed(user.Id));
         }
 
         _logger.Information("Adding password to user {TargetUserId} account.", user.Id);
         var resultAddPassword = await _userManager.AddPasswordAsync(user, model.Password);
         if (!resultAddPassword.Succeeded)
         {
-            _logger.Log(ErCodes.AddPasswordFailed(user.Id), Warning);
-            return Result.Failure(ErCodes.AddPasswordFailed(user.Id));
+            _logger.Log(UserServiceErrors.AddPasswordFailed(user.Id), Warning);
+            return Result.Failure(UserServiceErrors.AddPasswordFailed(user.Id));
         }
 
         scope.Complete();

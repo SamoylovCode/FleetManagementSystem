@@ -47,7 +47,7 @@ public class RegisterViewModel
     public string CompanyName { get; set; } = string.Empty;
 
     [RegularExpression(@"^\+[1-9]\d{3}[-]?\d{3}[-]?\d{4}$")]
-    [StringLength(12, MinimumLength = 12, ErrorMessage = "Номер телефона должен состоять из 11 цифр")]
+    [StringLength(18, MinimumLength = 12, ErrorMessage = "Номер телефона должен состоять из 11 цифр")]
     [Display(Name = "Телефон")]
     [Phone]
     public string PhoneNum { get; set; } = string.Empty;
@@ -80,19 +80,21 @@ public class RegisterViewModel
     [StringLength(5, ErrorMessage = "Укажите строение (до 5 символов")]
     public string? Apartment { get; set; }
 
+    // TODO: для тестирования отключена валидация полей
+
     [Display(Name = "ИНН")]
-    [RegularExpression(@"^\d{10}$|^\d{12}$", ErrorMessage = "ИНН должен содержать 10 (ИП) или 12 (юр. лицо) символов")]
+    //[RegularExpression(@"^\d{10}$|^\d{12}$", ErrorMessage = "ИНН должен содержать 10 (ИП) или 12 (юр. лицо) символов")]
     public string Inn { get; set; } = string.Empty;
 
     [Display(Name = "КПП")]
-    [RegularExpression(@"^\d{9}$", ErrorMessage = "КПП должен содержать 9 символов")]
+    //[RegularExpression(@"^\d{9}$", ErrorMessage = "КПП должен содержать 9 символов")]
     public string? Kpp { get; set; }
 
     [Display(Name = "ОГРН")]
-    [RegularExpression(@"^\d{13}$", ErrorMessage = "ОГРН должен содержать 13 символов")]
+    //[RegularExpression(@"^\d{13}$", ErrorMessage = "ОГРН должен содержать 13 символов")]
     public string? Ogrn { get; set; }
 
     [Display(Name = "ОКПО")]
-    [RegularExpression(@"^\d{7}$|^\d{9}$", ErrorMessage = "ОКПО должен содержать 7 или 9 символов")]
+    //[RegularExpression(@"^\d{7}$|^\d{9}$", ErrorMessage = "ОКПО должен содержать 7 или 9 символов")]
     public string? Okpo { get; set; }
 }

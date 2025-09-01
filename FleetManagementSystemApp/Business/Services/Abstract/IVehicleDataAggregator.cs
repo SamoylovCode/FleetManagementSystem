@@ -1,7 +1,7 @@
 ﻿using FleetManagementSystemApp.Business.Dtos;
 using FleetManagementSystemApp.Common;
 
-namespace FleetManagementSystemApp.Business.Services;
+namespace FleetManagementSystemApp.Business.Services.Abstract;
 
 public interface IVehicleDataAggregator
 {

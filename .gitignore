@@ -413,3 +413,4 @@ appsettings.Production.json
 /lib/
 /node_modules/
 /wwwroot/lib/bootstrap-icons/
+/FleetManagementSystemApp/wwwroot/lib

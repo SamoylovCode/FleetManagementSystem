@@ -1,5 +1,4 @@
-﻿using FleetManagementSystemApp.Common.Extensions;
-using LazyCache;
+﻿using LazyCache;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using StackExchange.Redis;
@@ -50,17 +49,46 @@ public class HybridCache : IHybridCache
         _logger.Information("HybridCache initialized and subscribed to {Channel}", InvalidateChannel);
     }
 
-    private IDatabase RedisDb
+    private IDatabase RedisDb => _redisConnection.GetDatabase();
+
+    private string NormalizeCacheKey(string cacheKey)
     {
-        get
+        if (string.IsNullOrWhiteSpace(cacheKey))
         {
-            return _redisConnection.GetDatabase();
+            throw new ArgumentNullException(nameof(cacheKey));
         }
+
+        return cacheKey.ToLowerInvariant();
     }
 
-    private string GetSpecifiedPrefix(string prefix)
+    private string NormalizePrefix(string prefix)
     {
-        return $"__prefix:{prefix}__keys";
+        if (string.IsNullOrWhiteSpace(prefix))
+        {
+            return string.Empty;
+        }
+
+        return prefix.ToLowerInvariant();
+    }
+
+    // Контейнер префикса в Redis: "__prefix:{normalizedPrefix}__keys"
+    private string GetSpecifiedPrefixContainer(string prefix)
+    {
+        return $"__prefix:{NormalizePrefix(prefix)}__keys";
+    }
+
+    // Композитный ключ, используемый в memory и redis.
+    // Если prefix задан — finalKey = "{normalizedPrefix}:{normalizedCacheKey}",
+    // иначе finalKey = "{normalizedCacheKey}"
+    private string GetCompositeKey(string cacheKey, string? prefix)
+    {
+        var key = NormalizeCacheKey(cacheKey);
+        if (string.IsNullOrWhiteSpace(prefix))
+        {
+            return key;
+        }
+
+        return $"{NormalizePrefix(prefix)}:{key}";
     }
 
     public async Task<T> GetOrAddAsync<T>(
@@ -69,80 +97,132 @@ public class HybridCache : IHybridCache
         TimeSpan? ttl = null,
         string? prefix = null)
     {
-        if(_memoryCache.TryGetValue(cacheKey, out T cached))
+        if (factory is null)
         {
-            _logger.Debug("MemoryCache hit: {Key}", cacheKey);
+            throw new ArgumentNullException(nameof(factory));
+        }
+
+        if (string.IsNullOrWhiteSpace(cacheKey))
+        {
+            throw new ArgumentNullException(nameof(cacheKey));
+        }
+
+        var finalKey = GetCompositeKey(cacheKey, prefix);
+
+        // Memory cache (local)
+        if (_memoryCache.TryGetValue(finalKey, out T cached))
+        {
+            //_logger.Debug("MemoryCache hit: {Key}", finalKey);
             return cached;
         }
 
-        var data = await _redis.GetAsync(cacheKey);
-
+        var data = await _redis.GetAsync(finalKey);
         if (data is not null)
         {
-            var serializedData = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(data));
-            _memoryCache.Add(cacheKey, serializedData, ttl ?? _defaultTtl);
-            _logger.Debug("RedisCache hit: {CacheKey}", cacheKey);
-            return serializedData!;
+            var json = Encoding.UTF8.GetString(data);
+            try
+            {
+                var deserialized = JsonConvert.DeserializeObject<T>(json);
+
+                if (deserialized == null)
+                {
+                    _logger.Warning("Redis key {CacheKey} deserialized to null (treat as miss).", finalKey);
+                }
+
+                _memoryCache.Add(finalKey, deserialized, ttl ?? _defaultTtl);
+                //_logger.Debug("RedisCache hit: {CacheKey}", finalKey);
+                return deserialized!;
+            }
+            catch (JsonException jex)
+            {
+                _logger.Error(jex, "Failed to deserialize cache key {CacheKey} to {Type}. Raw JSON: {Json}", finalKey, typeof(T).FullName, json);
+                await _redis.RemoveAsync(finalKey);
+                _memoryCache.Remove(finalKey);
+                _logger.Warning("Corrupt cache entry removed: {CacheKey}", finalKey);
+            }
         }
         else
         {
-            _logger.Debug("RedisCache miss: {CacheKey}", cacheKey);
+            _logger.Debug("RedisCache miss: {CacheKey}", finalKey);
         }
 
+        // Factory
         var value = await factory();
-
         if (value == null)
         {
-            _logger.Debug("Factory returned null for key {CacheKey}, skipping cache.", cacheKey);
+            _logger.Debug("Factory returned null for key {CacheKey}, skipping cache.", finalKey);
             return default!;
         }
 
+        // Cериализация только для Redis, в memory cache помещается неизменяемый (не сериализованный) объект
         var serializedValue = JsonConvert.SerializeObject(value);
-        var bytesValue = Encoding.UTF8.GetBytes(serializedValue);
-        await _redis.SetAsync(cacheKey, bytesValue, new DistributedCacheEntryOptions
+
+        // Redis
+        await _redis.SetAsync(
+            finalKey,
+            Encoding.UTF8.GetBytes(serializedValue),
+            new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = ttl ?? _defaultTtl
         });
 
         if (!string.IsNullOrWhiteSpace(prefix))
         {
-            await RedisDb.SetAddAsync(GetSpecifiedPrefix(prefix), cacheKey);
-            var added = await RedisDb.SetContainsAsync(GetSpecifiedPrefix(prefix), cacheKey);
+            var prefixContainer = GetSpecifiedPrefixContainer(prefix);
+            await RedisDb.SetAddAsync(prefixContainer, finalKey);
+            var added = await RedisDb.SetContainsAsync(prefixContainer, finalKey);
+
             if (!added)
             {
-                _logger.Error("Failed to add key {CacheKey} to prefix container {Prefix}", cacheKey, prefix);
-                throw new InvalidOperationException($"Failed to add key {cacheKey} to prefix {prefix}");
+                _logger.Error("Failed to add key {CacheKey} to prefix container {Prefix}", finalKey, NormalizePrefix(prefix));
+                throw new InvalidOperationException($"Failed to add key {finalKey} to prefix {NormalizePrefix(prefix)}");
             }
-            _logger.Information("Added key {CacheKey} to {Prefix} in Redis store", cacheKey, prefix);
+
+            _logger.Information("Added key {CacheKey} to {Prefix} in Redis store", finalKey, NormalizePrefix(prefix));
         }
 
-        _memoryCache.Add(cacheKey, value, ttl ?? _defaultTtl);
-        _logger.Information("Cached new value under key: {CacheKey}", cacheKey);
+        // В memory cache кладётся value, а не десериализованная копия
+        var serialized = JsonConvert.SerializeObject(value);
+        var clone = JsonConvert.DeserializeObject<T>(serialized)!;
 
-        return value;
+        _memoryCache.Add(finalKey, clone, ttl ?? _defaultTtl);
+        _logger.Information("Cached new value under key: {CacheKey}", finalKey);
+
+        return clone;
     }
 
     public async Task RemoveAsync(string cacheKey, string? prefix = null)
     {
-        InvalidateLocalKey(cacheKey);
+        if (string.IsNullOrWhiteSpace(cacheKey))
+        {
+            return;
+        }
 
-        await _redis.RemoveAsync(cacheKey);
-        _logger.Information("Removed cache entry: {CacheKey}", cacheKey);
+        var finalKey = GetCompositeKey(cacheKey, prefix);
+        InvalidateLocalKey(finalKey);
+
+        await _redis.RemoveAsync(finalKey);
+        _logger.Information("Removed cache entry: {CacheKey}", finalKey);
 
         if (!string.IsNullOrEmpty(prefix))
         {
-            await RedisDb.SetRemoveAsync(GetSpecifiedPrefix(prefix), cacheKey);
-            _logger.Information("Removed cache entry by prefix: {Prefix}", prefix);
+            var container = GetSpecifiedPrefixContainer(prefix);
+            await RedisDb.SetRemoveAsync(container, finalKey);
+            _logger.Information("Removed cache entry from prefix container: {Prefix}", prefix);
         }
 
         var sub = _redisConnection.GetSubscriber();
-        await sub.PublishAsync(InvalidateChannel, cacheKey);
+        await sub.PublishAsync(InvalidateChannel, finalKey);
     }
 
     public async Task RemoveByPrefixAsync(string prefix)
     {
-        var specifiedKey = GetSpecifiedPrefix(prefix);
+        if (string.IsNullOrWhiteSpace(prefix)) return;
+
+        var normalizedPrefix = NormalizePrefix(prefix);
+        var specifiedKey = GetSpecifiedPrefixContainer(normalizedPrefix);
         var members = await RedisDb.SetMembersAsync(specifiedKey);
+        //_logger.Debug("RemoveByPrefix: prefix={Prefix}, membersCount={Count}", normalizedPrefix, members.Length);
 
         foreach (var member in members)
         {
@@ -155,32 +235,41 @@ public class HybridCache : IHybridCache
         await RedisDb.KeyDeleteAsync(specifiedKey);
 
         var sub = _redisConnection.GetSubscriber();
-        await sub.PublishAsync(InvalidateChannel, $"prefix:{prefix}");
+        await sub.PublishAsync(InvalidateChannel, $"prefix:{normalizedPrefix}");
     }
 
     public void InvalidateLocalKey(string cacheKey)
     {
-        _memoryCache.Remove(cacheKey);
+        if (string.IsNullOrWhiteSpace(cacheKey))
+        {
+            return;
+        }
+
+        _memoryCache.Remove(cacheKey.ToLowerInvariant());
     }
 
     public async Task InvalidateLocalByPrefix(string prefix)
     {
-        var specifiedKey = GetSpecifiedPrefix(prefix);
+        if (string.IsNullOrWhiteSpace(prefix))
+        {
+            return;
+        }
+
+        var specifiedKey = GetSpecifiedPrefixContainer(prefix);
         var members = await RedisDb.SetMembersAsync(specifiedKey);
 
-        foreach(var member in members)
+        foreach (var member in members)
         {
             var cacheKey = member.ToString()!;
             _memoryCache.Remove(cacheKey);
         }
     }
 
-    // For debuging
+    // For debugging
     public async Task DumpPrefixesAsync()
     {
         var server = _redisConnection.GetServer(_redisConnection.GetEndPoints().First());
 
-        // Get all keys with prefixes
         foreach (var cacheKey in server.Keys(pattern: "__prefix:*__keys"))
         {
             Console.WriteLine($"Prefix key container: {cacheKey}");

@@ -1,6 +1,7 @@
 ﻿using FleetManagementSystemApp.Business.Dtos;
 using FleetManagementSystemApp.Business.Dtos.DtoExtensions;
 using FleetManagementSystemApp.Business.Services;
+using FleetManagementSystemApp.Business.Services.Abstract;
 using FleetManagementSystemApp.Business.Services.Errors;
 using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Common.Extensions;
@@ -78,9 +79,15 @@ public class InsuranceSubModelHandler : ISubModelHandler
             };
             return insuranceVm;
         },
-        key: CachePrefixes.VehicleAggregateSubModelKey(vehicleId, Prefix),
+        //key: CachePrefixes.VehicleAggregateSubModelKey(vehicleId, Prefix),
+        key: vehicleId.ToString(),
         ttl: TimeSpan.FromMinutes(2),
         prefix: CachePrefixes.VehicleAggregateSubModel(vehicleId, Prefix));
+
+        if (cachedVm == null)
+        {
+            _logger.Log(AggregateModelServiceErrors.SubModelIsNull(vehicleId.ToString(), Prefix));
+        }
 
         return Result<ISubModel>.Success(cachedVm);
     }

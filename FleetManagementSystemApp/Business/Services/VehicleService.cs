@@ -114,7 +114,7 @@ public class VehicleService : IVehicleService
             return Result<List<VehicleDto>>.Failure(UserServiceErrors.CompanyNotFound(null));
         }
 
-        var dtoList = await _hybridCache.GetOrAddAsync(async () =>
+        var cachedDtoList = await _hybridCache.GetOrAddAsync(async () =>
         {
             var vehicles = await VehicleQueryWithAll()
                 .Where(v => v.CompanyId == companyId)
@@ -136,7 +136,7 @@ public class VehicleService : IVehicleService
         ttl: TimeSpan.FromMinutes(2),
         prefix: CachePrefixes.VehiclesList);
 
-        return Result<List<VehicleDto>>.Success(dtoList);
+        return Result<List<VehicleDto>>.Success(cachedDtoList);
     }
 
     public async Task<Result<Vehicle>> GetVehicleByIdAsync(Guid vehicleId)

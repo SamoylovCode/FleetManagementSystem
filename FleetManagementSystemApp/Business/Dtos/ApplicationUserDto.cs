@@ -15,6 +15,8 @@ public class ApplicationUserDto
     public string PasswordHash { get; init; }
     public string SecurityStamp { get; init; }
 
+    public ApplicationUserDto() { }
+
     public ApplicationUserDto(
         string userId,
         string firstName,

@@ -112,10 +112,9 @@ public class AccountController : Controller
                 if (!string.IsNullOrEmpty(returnUrl) && !Url.IsLocalUrl(returnUrl))
                 {
                     _logger.Warning("Attempt to redirect to external URL: {ReturnUrl}", returnUrl);
-                    returnUrl = "Vehicles/List";
                 }
 
-                return Redirect(returnUrl!);
+                return RedirectToAction("Login", "Account");
             },
             onFailure: (errors) =>
             {

@@ -1,6 +1,7 @@
 ﻿using FleetManagementSystemApp.Business.Dtos;
 using FleetManagementSystemApp.Business.Dtos.DtoExtensions;
 using FleetManagementSystemApp.Business.Services;
+using FleetManagementSystemApp.Business.Services.Abstract;
 using FleetManagementSystemApp.Business.Services.Errors;
 using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Common.Extensions;
@@ -53,9 +54,9 @@ public class CertificateTechInspectionSubModelHandler : ISubModelHandler
             return Result<ISubModel>.Failure(AggregateModelServiceErrors.AggregateSubModelsNotFound(vehicleId.ToString()));
         }
 
-        var CertificateTechInspectionDto = vehicleDataDto.Value.CertificateTechInspection;
+        var сertificateTechInspectionDto = vehicleDataDto.Value.CertificateTechInspection;
 
-        if (CertificateTechInspectionDto is null)
+        if (сertificateTechInspectionDto is null)
         {
             _logger.Log(AggregateModelServiceErrors.SubModelIsNull(vehicleId.ToString(), Prefix));
             return Result<ISubModel>.Failure(AggregateModelServiceErrors.SubModelIsNull(vehicleId.ToString(), Prefix));
@@ -65,24 +66,30 @@ public class CertificateTechInspectionSubModelHandler : ISubModelHandler
         {
             _logger.Information("Returning certificate of periodic technical inspection DTO for vehicle {VehicleId}", vehicleId);
 
-            var periodString = _dateRangeParser.GetPeriodDates(CertificateTechInspectionDto.CertificateTechInspectionIssueDate.ToString() ?? string.Empty, CertificateTechInspectionDto.CertificateTechInspectionExpDate.ToString() ?? string.Empty);
+            var periodString = _dateRangeParser.GetPeriodDates(сertificateTechInspectionDto.CertificateTechInspectionIssueDate.ToString() ?? string.Empty, сertificateTechInspectionDto.CertificateTechInspectionExpDate.ToString() ?? string.Empty);
 
             var certificateTechInspectionVm = new CertificateTechInspectionViewModel
             {
-                CertificateTechInspectionId = CertificateTechInspectionDto.CertificateTechInspectionId,
-                VehicleId = CertificateTechInspectionDto.VehicleId,
-                CertificateTechInspectionNum = CertificateTechInspectionDto.CertificateTechInspectionNum,
-                CertificateTechInspectionIssuedBy = CertificateTechInspectionDto.CertificateTechInspectionIssuedBy,
-                CertificateTechInspectionIssueDate = CertificateTechInspectionDto.CertificateTechInspectionIssueDate,
-                CertificateTechInspectionExpDate = CertificateTechInspectionDto.CertificateTechInspectionExpDate,
-                RowVersion = CertificateTechInspectionDto.RowVersion,
+                CertificateTechInspectionId = сertificateTechInspectionDto.CertificateTechInspectionId,
+                VehicleId = сertificateTechInspectionDto.VehicleId,
+                CertificateTechInspectionNum = сertificateTechInspectionDto.CertificateTechInspectionNum,
+                CertificateTechInspectionIssuedBy = сertificateTechInspectionDto.CertificateTechInspectionIssuedBy,
+                CertificateTechInspectionIssueDate = сertificateTechInspectionDto.CertificateTechInspectionIssueDate,
+                CertificateTechInspectionExpDate = сertificateTechInspectionDto.CertificateTechInspectionExpDate,
+                RowVersion = сertificateTechInspectionDto.RowVersion,
                 PeriodString = periodString,
             };
             return certificateTechInspectionVm;
         },
-        key: CachePrefixes.VehicleAggregateSubModelKey(vehicleId, Prefix),
+        //key: CachePrefixes.VehicleAggregateSubModelKey(vehicleId, Prefix),
+        key: vehicleId.ToString(),
         ttl: TimeSpan.FromMinutes(2),
         prefix: CachePrefixes.VehicleAggregateSubModel(vehicleId, Prefix));
+
+        if (cachedVm == null)
+        {
+            _logger.Log(AggregateModelServiceErrors.SubModelIsNull(vehicleId.ToString(), Prefix));
+        }
 
         return Result<ISubModel>.Success(cachedVm);
     }

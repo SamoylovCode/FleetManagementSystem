@@ -114,8 +114,7 @@ public class VehiclesController : Controller
                 {
                     ModelState.AddModelError("", e.UserDescription ?? "");
                 }
-
-                return View(resultAggregateVm);
+                return View(new VehiclePageViewModel { VehicleId = vehicleId });
             });
     }
 

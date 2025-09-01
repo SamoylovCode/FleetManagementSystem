@@ -29,14 +29,15 @@ public class AggregateModelService<TAggregatorViewModel> : IAggregateModelServic
     public async Task<Result<TAggregatorViewModel>> BuildAggregateViewModelAsync(TAggregatorViewModel aggregateVm)
     {
         var vehicleId = aggregateVm.GetEntityId();
+
+        if (aggregateVm is null)
+        {
+            _logger.Error("Aggregate view model is null.");
+            return Result<TAggregatorViewModel>.Failure(CommonErrors.ParamIsNullOrEmpty(typeof(AggregateModelService<TAggregatorViewModel>)));
+        }
+
         var cachedAggregateVm = await _hybridCache.GetOrAddAsync(async () =>
         {
-            if (aggregateVm is null)
-            {
-                _logger.Error("Aggregate view model is null.");
-                return Result<TAggregatorViewModel>.Failure(CommonErrors.ParamIsNullOrEmpty(typeof(AggregateModelService<TAggregatorViewModel>)));
-            }
-
             foreach (var handler in _subModelHandlers)
             {
                 var subVm = await handler.LoadAsync(aggregateVm);
@@ -68,23 +69,23 @@ public class AggregateModelService<TAggregatorViewModel> : IAggregateModelServic
                 }
             }
 
-            if (_subModelHandlers.All(h =>
-            {
-                var prop = aggregateVm.GetType().GetProperty(h.Prefix);
-                return prop is null || prop.GetValue(aggregateVm) is null;
-            }))
-            {
-                _logger.Log(AggregateModelServiceErrors.AggregateSubModelsNotFound(nameof(aggregateVm)), Levels.Error);
-                return Result<TAggregatorViewModel>.Failure(AggregateModelServiceErrors.AggregateSubModelsNotFound(nameof(aggregateVm)));
-            }
-
-            return Result<TAggregatorViewModel>.Success(aggregateVm);
+            return aggregateVm;
         },
         key: vehicleId.ToString(),
         ttl: TimeSpan.FromMinutes(2),
         prefix: CachePrefixes.VehicleAggregateFull(vehicleId));
 
-        return Result<TAggregatorViewModel>.Success(cachedAggregateVm.Value);
+        if (_subModelHandlers.All(h =>
+        {
+            var prop = cachedAggregateVm.GetType().GetProperty(h.Prefix);
+            return prop is null || prop.GetValue(cachedAggregateVm) is null;
+        }))
+        {
+            _logger.Log(AggregateModelServiceErrors.AggregateSubModelsNotFound(nameof(aggregateVm)), Levels.Error);
+            return Result<TAggregatorViewModel>.Failure(AggregateModelServiceErrors.AggregateSubModelsNotFound(nameof(aggregateVm)));
+        }
+
+        return Result<TAggregatorViewModel>.Success(cachedAggregateVm);
     }
 
     public async Task<Result> UpdateAggregateViewModelAsync(TAggregatorViewModel aggregateVm)

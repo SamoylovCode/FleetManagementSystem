@@ -9,7 +9,7 @@ public class Result
     public Error? Error { get; }
     public IList<Error> Errors { get; }
 
-    [JsonConstructor]
+    //[JsonConstructor]
     protected Result(
         bool isSuccess,
         Error? error,
