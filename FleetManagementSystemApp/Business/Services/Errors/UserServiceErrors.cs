@@ -96,6 +96,13 @@ public static class UserServiceErrors
             userDesc: "Не удалось подтвердить почту пользователя.",
             devDesc: $"Cannot confirm email for user '{userId}'.",
             context: new { UserId = userId });
+    
+    public static Error EmailNotConfirmed(string userId) =>
+    new Error(
+        UserServiceErrorCodes.EmailNotConfirmed,
+        userDesc: "Почта пользователя не подтверждена.",
+        devDesc: $"Email for user '{userId}' is not confirmed.",
+        context: new { UserId = userId });
 
     public static Error AddToRoleFailed(string userId) =>
         new Error(

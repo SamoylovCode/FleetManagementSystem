@@ -13,6 +13,7 @@ public static class UserServiceErrorCodes
     public const string EmailIsNullOrEmpty = "EmailIsNullOrEmpty";
     public const string SendEmailFailed = "SendEmailFailed";
     public const string EmailConfirmedFailed = "EmailConfirmedFailed";
+    public const string EmailNotConfirmed = "EmailNotConfirmed";
     public const string AddToRoleFailed = "AddToRoleFailed";
     public const string AddClaimsFailed = "AddClaimsFailed";
 }

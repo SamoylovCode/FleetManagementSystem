@@ -9,7 +9,9 @@ public static class StartupChecks
         foreach (var variable in requiredVars)
         {
             if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(variable)))
+            {
                 throw new InvalidOperationException($"Необходимая переменная окружения '{variable}' не задана.");
+            }
         }
     }
 }

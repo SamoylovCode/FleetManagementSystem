@@ -24,8 +24,6 @@ public class AccountController : Controller
     private readonly IUserService _userService;
     private readonly ILogger _logger;
 
-    public string ReturnUrl { get; set; }
-
     public AccountController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,

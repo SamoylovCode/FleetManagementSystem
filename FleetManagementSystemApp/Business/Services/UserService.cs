@@ -251,6 +251,15 @@ public class UserService : IUserService
             _logger.Log(UserServiceErrors.PasswordDoesNotMatch(user.Id), Warning);
             return Result.Failure(UserServiceErrors.PasswordDoesNotMatch(user.Id));
         }
+
+        var isEmailConfirmed = await _userManager.IsEmailConfirmedAsync(user);
+
+        if (!isEmailConfirmed)
+        {
+            _logger.Log(UserServiceErrors.EmailNotConfirmed(user.Id));
+            return Result.Failure(UserServiceErrors.EmailNotConfirmed(user.Id));
+        }
+
         await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
 
         _logger.Information("User {TargetUserId} logged in.", user.Id);

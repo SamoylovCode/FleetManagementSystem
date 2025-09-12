@@ -5,6 +5,10 @@ VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FleetManagementSystemApp", "FleetManagementSystemApp\FleetManagementSystemApp.csproj", "{29C3FF71-D7D5-455E-880D-5B8E9BC73F56}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FleetManagementSystemApp.Tests", "FleetManagementSystemApp.Tests\FleetManagementSystemApp.Tests.csproj", "{1BA3BADD-BB31-4AF2-AB87-BE885FA3BD26}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,9 +19,16 @@ Global
 		{29C3FF71-D7D5-455E-880D-5B8E9BC73F56}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{29C3FF71-D7D5-455E-880D-5B8E9BC73F56}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{29C3FF71-D7D5-455E-880D-5B8E9BC73F56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BA3BADD-BB31-4AF2-AB87-BE885FA3BD26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BA3BADD-BB31-4AF2-AB87-BE885FA3BD26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BA3BADD-BB31-4AF2-AB87-BE885FA3BD26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BA3BADD-BB31-4AF2-AB87-BE885FA3BD26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1BA3BADD-BB31-4AF2-AB87-BE885FA3BD26} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1BD4CB25-210E-4D20-BA5C-4E206DC7A457}
