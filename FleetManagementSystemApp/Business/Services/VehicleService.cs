@@ -96,8 +96,8 @@ public class VehicleService : IVehicleService
             {
                 VehicleId = vehicleId,
                 CertificateTechInspectionId = Guid.NewGuid(),
-                CertificateTechInspectionIssueDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                CertificateTechInspectionExpDate = DateOnly.FromDateTime(DateTime.UtcNow)
+                IssueDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                ExpDate = DateOnly.FromDateTime(DateTime.UtcNow)
             }
         };
 
@@ -220,10 +220,10 @@ public class VehicleService : IVehicleService
                 {
                     VehicleId= vehicle.VehicleId,
                     CertificateTechInspectionId = viewModel.CertificateTechInspection.CertificateTechInspectionId,
-                    CertificateTechInspectionNum = viewModel.CertificateTechInspection.CertificateTechInspectionNum,
-                    CertificateTechInspectionIssuedBy = viewModel.CertificateTechInspection.CertificateTechInspectionIssuedBy,
-                    CertificateTechInspectionIssueDate = startCertificationDate,
-                    CertificateTechInspectionExpDate = endCertificationDate
+                    Number = viewModel.CertificateTechInspection.Number,
+                    IssuedBy = viewModel.CertificateTechInspection.IssuedBy,
+                    IssueDate = startCertificationDate,
+                    ExpDate = endCertificationDate
                 };
 
                 var entities = new List<object>()

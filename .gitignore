@@ -401,6 +401,7 @@ FodyWeavers.xsd
 
 # Sensitive Data
 .env
+*.env.local
 *.key
 *.pem
 secrets.json
@@ -414,3 +415,6 @@ appsettings.Production.json
 /node_modules/
 /wwwroot/lib/bootstrap-icons/
 /FleetManagementSystemApp/wwwroot/lib
+
+/FleetManagementSystemApp/best_practices.md
+/FleetManagementSystemApp/Shortkeys.md

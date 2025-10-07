@@ -143,6 +143,35 @@
             <typeparam name="T">Type of methods</typeparam>
             <typeparam name="TKey">Type of parameters</typeparam>
         </member>
+        <member name="T:FleetManagementSystemApp.Business.Services.AggregateModelService`1">
+            <summary>
+            Service responsible for building and updating aggregate view models by combining multiple sub-models.
+            Provides caching functionality to improve performance and ensures data consistency through sub-model handlers.
+            </summary>
+            <typeparam name="TAggregatorViewModel">The type of aggregate view model that implements IAggregateViewModel.</typeparam>
+        </member>
+        <member name="M:FleetManagementSystemApp.Business.Services.AggregateModelService`1.BuildAggregateViewModelAsync(`0)">
+            <summary>
+            Builds an aggregate view model by loading sub-models and caching the result.
+            </summary>
+            <param name="aggregateVm">The aggregate view model to populate with sub-models.</param>
+            <returns>A result containing the populated aggregate view model or failure information.</returns>
+        </member>
+        <member name="M:FleetManagementSystemApp.Business.Services.AggregateModelService`1.UpdateAggregateViewModelAsync(`0)">
+            <summary>
+            Updates all sub-models within the aggregate view model by calling their respective handlers.
+            </summary>
+            <param name="aggregateVm">The aggregate view model containing sub-models to update.</param>
+            <returns>A result indicating success or failure of the update operation.</returns>
+        </member>
+        <member name="M:FleetManagementSystemApp.Business.Services.AggregateModelService`1.UpdateSubModelAsync(FleetManagementSystemApp.ViewModels.Vehicle.Abstract.ISubModel)">
+            <summary>
+            Updates a single sub-model by finding the appropriate handler and saving the changes.
+            Also removes related cached entries to ensure data consistency.
+            </summary>
+            <param name="viewModel">The sub-model view model to update.</param>
+            <returns>A result indicating success or failure of the update operation.</returns>
+        </member>
         <member name="T:FleetManagementSystemApp.Common.ErrorMapping">
             <summary>
             Provides mapping between error codes and corresponding view responses.
@@ -186,103 +215,16 @@
             The navigation property
             </summary>
         </member>
-        <member name="T:FleetManagementSystemApp.Data.Migrations.InitialCreate">
+        <member name="T:FleetManagementSystemApp.Migrations.InitialCreate">
             <inheritdoc />
         </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+        <member name="M:FleetManagementSystemApp.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
             <inheritdoc />
         </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+        <member name="M:FleetManagementSystemApp.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
             <inheritdoc />
         </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="T:FleetManagementSystemApp.Data.Migrations.reg">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.reg.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.reg.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.reg.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="T:FleetManagementSystemApp.Data.Migrations.updateUserMigration">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.updateUserMigration.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.updateUserMigration.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.updateUserMigration.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="T:FleetManagementSystemApp.Data.Migrations.fixMigration">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.fixMigration.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.fixMigration.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.fixMigration.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="T:FleetManagementSystemApp.Data.Migrations.InfoCards">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.InfoCards.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.InfoCards.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.InfoCards.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="T:FleetManagementSystemApp.Data.Migrations.RemoveCompanyId1">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.RemoveCompanyId1.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.RemoveCompanyId1.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.RemoveCompanyId1.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.AddRowVersionProperly.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="T:FleetManagementSystemApp.Data.Migrations.UpdateColumnsDb">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.UpdateColumnsDb.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.UpdateColumnsDb.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.UpdateColumnsDb.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="T:FleetManagementSystemApp.Data.Migrations.AddCertificateTechInspection">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.AddCertificateTechInspection.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.AddCertificateTechInspection.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
-            <inheritdoc />
-        </member>
-        <member name="M:FleetManagementSystemApp.Data.Migrations.AddCertificateTechInspection.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+        <member name="M:FleetManagementSystemApp.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
         <member name="T:FleetManagementSystemApp.Filters.ServiceResultFilter">

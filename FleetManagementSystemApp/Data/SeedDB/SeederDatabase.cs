@@ -1,5 +1,4 @@
-﻿using FleetManagementSystemApp.Common.Extensions;
-using FleetManagementSystemApp.Data.Entities;
+﻿using FleetManagementSystemApp.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using ILogger = Serilog.ILogger;
 
@@ -10,20 +9,25 @@ public class SeederDatabase : ISeederDatabase
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
 
     public SeederDatabase(
         ApplicationDbContext dbContext,
         ILogger logger,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager)
     {
         _dbContext = dbContext;
         _logger = logger;
         _userManager = userManager;
+        _roleManager = roleManager;
     }
 
     public async Task SeedAsync()
     {
         _logger.Information("Starting database seeding...");
+
+        //await CreateRolesAsync();
 
         var company = new Company
         {
@@ -37,45 +41,82 @@ public class SeederDatabase : ISeederDatabase
             IsMain = true,
         };
 
-        if(_dbContext.Companies.Any(c => c.Name == company.Name))
+        if (_dbContext.Companies.Any(c => c.Name == company.Name))
         {
-            _logger.Information("This company already exists.");
+            _logger.Warning("This company already exists.");
             return;
         }
-        else
+
+        var existingRole = await _roleManager.RoleExistsAsync(ApplicationRole.Admin);
+
+        if (!existingRole)
+        {
+            _logger.Error("Role does not exists.");
+            return;
+        }
+
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+        try
         {
             await _dbContext.Companies.AddAsync(company);
             await _dbContext.SaveChangesAsync();
-        }
 
-        var user = new ApplicationUser
-        {
-            Id = Guid.NewGuid().ToString(),
-            UserName = "ivanovsky.testcompany@example.com", // email
-            Email = "ivanovsky.testcompany@example.com",
-            FirstName = "Иван",
-            MiddleName = "Иванович",
-            LastName = "Ивановский",
-            CreatedAt = DateTime.UtcNow,
-            CompanyId = company.CompanyId,
-            EmailConfirmed = true
-        };
-
-        var createResult = await _userManager.CreateAsync(user, "P@ssw0rd!123");
-
-        if(!createResult.Succeeded)
-        {
-            _logger.Error("Something went wrong while creating a test user.");
-            foreach(var error in createResult.Errors)
+            if (_dbContext.Vehicles.Any(v => v.CompanyId == company.CompanyId))
             {
-                _logger.Error("Error code: {Error code}. Error message: {ErrorMessage}", error.Code, error.Description);
+                _logger.Warning("These vehicles are already assigned to the company.");
+                await transaction.RollbackAsync();
+                return;
             }
-        }
 
-        await _userManager.AddToRoleAsync(user, ApplicationRole.Admin);
+            var user = new ApplicationUser
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserName = "ivanov.testcompany@example.com", // Email
+                Email = "ivanov.testcompany@example.com",
+                FirstName = "Иван",
+                MiddleName = "Иванович",
+                LastName = "Иванов",
+                CreatedAt = DateTime.UtcNow,
+                CompanyId = company.CompanyId,
+                EmailConfirmed = true
+            };
 
-        if (!_dbContext.Vehicles.Any(v => v.CompanyId == company.CompanyId))
-        {
+            var findUserResult = await _userManager.FindByEmailAsync(user.Email);
+
+            if (findUserResult != null)
+            {
+                _logger.Warning("User with email {Email} already exists.", user.Email);
+                await transaction.RollbackAsync();
+                return;
+            }
+
+            var createUserResult = await _userManager.CreateAsync(user, "P@ssw0rd!123");
+
+            if (!createUserResult.Succeeded)
+            {
+                _logger.Error("Something went wrong while creating a test user.");
+                foreach (var error in createUserResult.Errors)
+                {
+                    _logger.Error("Error code: {Error code}. Error message: {ErrorMessage}", error.Code, error.Description);
+                }
+                await transaction.RollbackAsync();
+                return;
+            }
+
+            var addRoleResult = await _userManager.AddToRoleAsync(user, ApplicationRole.Admin);
+
+            if (!addRoleResult.Succeeded)
+            {
+                _logger.Error("Failed to add user to role");
+                foreach (var error in addRoleResult.Errors)
+                {
+                    _logger.Error("Error: {Code} - {Description}", error.Code, error.Description);
+                }
+                await transaction.RollbackAsync();
+                return;
+            }
+
             var vehicle1 = new Vehicle
             {
                 VehicleId = Guid.NewGuid(),
@@ -114,6 +155,8 @@ public class SeederDatabase : ISeederDatabase
                     vehicle2,
                     vehicle3
                 });
+
+            await _dbContext.SaveChangesAsync();
 
             if (!_dbContext.Passports.Any())
             {
@@ -214,37 +257,76 @@ public class SeederDatabase : ISeederDatabase
                     new CertificateTechInspection
                     {
                         CertificateTechInspectionId = Guid.NewGuid(),
-                        CertificateTechInspectionNum = "012345678912345",
-                        CertificateTechInspectionIssuedBy = "ООО Техосмотр",
-                        CertificateTechInspectionIssueDate = new DateOnly(2025, 6, 1),
-                        CertificateTechInspectionExpDate = new DateOnly(2025, 6, 1),
+                        Number = "012345678912345",
+                        IssuedBy = "ООО Техосмотр",
+                        IssueDate = new DateOnly(2025, 6, 1),
+                        ExpDate = new DateOnly(2026, 6, 1),
                         RowVersion = Array.Empty<byte>(),
                         VehicleId = vehicle1.VehicleId
                     },
                     new CertificateTechInspection
                     {
                         CertificateTechInspectionId = Guid.NewGuid(),
-                        CertificateTechInspectionNum = "123456789012345",
-                        CertificateTechInspectionIssuedBy = "ООО Техосмотр",
-                        CertificateTechInspectionIssueDate = new DateOnly(2025, 6, 1),
-                        CertificateTechInspectionExpDate = new DateOnly(2025, 6, 1),
+                        Number = "123456789012345",
+                        IssuedBy = "ООО Техосмотр",
+                        IssueDate = new DateOnly(2025, 6, 1),
+                        ExpDate = new DateOnly(2026, 6, 1),
                         RowVersion = Array.Empty<byte>(),
-                        VehicleId = vehicle1.VehicleId
+                        VehicleId = vehicle2.VehicleId
                     },
                     new CertificateTechInspection
                     {
                         CertificateTechInspectionId = Guid.NewGuid(),
-                        CertificateTechInspectionNum = "234567890123456",
-                        CertificateTechInspectionIssuedBy = "ООО Техосмотр",
-                        CertificateTechInspectionIssueDate = new DateOnly(2025, 6, 1),
-                        CertificateTechInspectionExpDate = new DateOnly(2025, 6, 1),
+                        Number = "234567890123456",
+                        IssuedBy = "ООО Техосмотр",
+                        IssueDate = new DateOnly(2025, 6, 1),
+                        ExpDate = new DateOnly(2026, 6, 1),
                         RowVersion = Array.Empty<byte>(),
-                        VehicleId = vehicle1.VehicleId
+                        VehicleId = vehicle3.VehicleId
                     });
             }
 
             await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
             _logger.Information("Database seeding completed successfully.");
         }
+        catch (Exception e)
+        {
+            _logger.Error(e, "An error occurred while database seeding. Error: {Message}", e.Message);
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
+
+    //public async Task CreateRolesAsync()
+    //{
+    //    try
+    //    {
+    //        var roles = new Dictionary<string, string>
+    //        {
+    //            { "1", ApplicationRole.Admin },
+    //            { "2", ApplicationRole.Manager },
+    //            { "3", ApplicationRole.Dispatcher },
+    //            { "4", ApplicationRole.Inspector }
+    //        };
+
+    //        foreach (var role in roles)
+    //        {
+    //            var roleExists = await _roleManager.RoleExistsAsync(role.Value);
+    //            if (!roleExists)
+    //            {
+    //                await _roleManager.CreateAsync(
+    //                    new IdentityRole(role.Value)
+    //                    {
+    //                        Id = role.Key,
+    //                    });
+    //            }
+    //        }
+    //    }
+    //    catch (Exception e)
+    //    {
+    //        _logger.Error(e, "Failed to create roles.");
+    //        throw;
+    //    }
+    //}
 }

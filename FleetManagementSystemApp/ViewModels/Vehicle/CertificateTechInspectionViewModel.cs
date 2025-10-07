@@ -12,15 +12,15 @@ public class CertificateTechInspectionViewModel : ISubModel
     public string Prefix => "CertificateTechInspection";
 
     [Display(Name = "Номер ЕАИСТО")]
-    public string? CertificateTechInspectionNum { get; set; }
+    public string? Number { get; set; }
 
     [Display (Name = "Кем выдан")]
-    public string? CertificateTechInspectionIssuedBy { get; set; }
-    public DateOnly? CertificateTechInspectionIssueDate { get; set; }
-    public DateOnly? CertificateTechInspectionExpDate { get; set; }
+    public string? IssuedBy { get; set; }
+    public DateOnly? IssueDate { get; set; }
+    public DateOnly? ExpDate { get; set; }
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     [Display(Name = "Срок действия диагностической карты")]
-    [DateRangeBinder(nameof(CertificateTechInspectionIssueDate), nameof(CertificateTechInspectionExpDate))]
+    [DateRangeBinder(nameof(IssueDate), nameof(ExpDate))]
     public string? PeriodString { get; set; } //только во view model
 }

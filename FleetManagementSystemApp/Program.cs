@@ -45,7 +45,7 @@ builder.Host.UseSerilog((ctx, services, lc) =>
     }
 });
 
-builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+//builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
@@ -67,14 +67,14 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.SignIn.RequireConfirmedAccount = true;
     options.Lockout.AllowedForNewUsers = true; // Activates user lockout to prevent brute force attacks targeting user passwords
     options.User.RequireUniqueEmail = true;
-    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+    //options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
 
     // Password settings
-    options.Password.RequiredLength = 8;
+    options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireLowercase = true;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireDigit = true;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireDigit = false;
 
     // Lockout settings
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
@@ -119,15 +119,27 @@ builder.Services.AddScoped<ISubModelHandler, VehicleIdentificationDataSubModelHa
 builder.Services.AddScoped<ISubModelHandler, CertificateTechInspectionSubModelHandler>();
 // Configuring DataProtection key storage; change this in production!
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\keys\"))
-    .SetApplicationName("FleetManagementSystem");
+    .SetApplicationName("FleetManagementSystemApp")
+    .PersistKeysToFileSystem(new DirectoryInfo("/app/keys/")) // For Linux
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
+    //.PersistKeysToFileSystem(new DirectoryInfo(@"C:\keys\"))
+    //.UseEphemeralDataProtectionProvider(); // <-- ИСПОЛЬЗОВАТЬ ТОЛЬКО ДЛЯ РАЗРАБОТКИ!
+builder.Services.AddAntiforgery(o =>
+{
+    o.Cookie.Name = "fms.af";
+    o.Cookie.HttpOnly = true;
+    o.Cookie.SameSite = SameSiteMode.Lax;
+    o.Cookie.SecurePolicy = CookieSecurePolicy.None; // в Dev без https
+    // o.HeaderName = "X-CSRF-TOKEN"; // опция, если отправлять токен в header
+});
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.Name = "fmsAuth";
+    options.Cookie.Name = "fms.auth";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only
+    //options.SecurePolicy = CookieSecurePolicy.None;
+    //options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // HTTPS only
     options.Cookie.SameSite = SameSiteMode.Lax; // Protection from CSRF
-    options.LoginPath = "/Account/Login";
+    options.LoginPath = "/account/login";
     options.AccessDeniedPath = "/account/access-denied";
     options.ExpireTimeSpan = TimeSpan.FromDays(1);
     options.SlidingExpiration = true;
@@ -137,7 +149,8 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.CheckConsentNeeded = context => false;
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
-
+//builder.Services.AddControllers() // Только API
+//    .AddControllersAsServices();
 builder.Services
     .AddControllersWithViews(options =>
     {
@@ -200,6 +213,10 @@ if (app.Environment.IsDevelopment())
     app.UseMigrationsEndPoint();
     app.UseSwagger();
     app.UseSwaggerUI();
+    // builder.Services.ConfigureApplicationCookie(o =>
+    // {
+    //     o.Cookie.SecurePolicy = CookieSecurePolicy.None;
+    // });
 }
 else
 {
@@ -209,7 +226,10 @@ else
 }
 
 // Only in this sequence: UseRouting() -> UseAuthentication() -> UseAuthorization()
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseRouting();
 app.UseCookiePolicy();
 app.UseAuthentication();
@@ -225,8 +245,25 @@ app.MapRazorPages();
 // Initialization of data
 using (var scope = app.Services.CreateScope())
 {
-    var seeder = scope.ServiceProvider.GetRequiredService<ISeederDatabase>();
-    await seeder.SeedAsync();
+    var services = scope.ServiceProvider;
+    var dbContext = services.GetService<ApplicationDbContext>();
+    var log = services.GetService<ILogger<Program>>();
+
+    try
+    {
+        if(dbContext != null)
+        {
+            log?.LogDebug("Applying migrations to DB.");
+            await dbContext.Database.MigrateAsync();
+        }
+
+        //var seeder = services.GetRequiredService<ISeederDatabase>();
+        //await seeder.SeedAsync();
+    }
+    catch (Exception e)
+    {
+        log?.LogError(e, "An error occurred while migrating/seeding the database.");
+    }
 }
 
 app.MapGet("/", context =>

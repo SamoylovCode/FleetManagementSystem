@@ -17,10 +17,10 @@ public class CertificateTechInspectionExtentions : BaseMapper<CertificateTechIns
         {
             CertificateTechInspectionId = certTechInspection.CertificateTechInspectionId,
             VehicleId = certTechInspection.VehicleId,
-            CertificateTechInspectionNum = certTechInspection.CertificateTechInspectionNum,
-            CertificateTechInspectionIssuedBy = certTechInspection.CertificateTechInspectionIssuedBy,
-            CertificateTechInspectionIssueDate = certTechInspection.CertificateTechInspectionIssueDate,
-            CertificateTechInspectionExpDate = certTechInspection.CertificateTechInspectionExpDate,
+            Number = certTechInspection.Number,
+            IssuedBy = certTechInspection.IssuedBy,
+            IssueDate = certTechInspection.IssueDate,
+            ExpDate = certTechInspection.ExpDate,
             RowVersion = certTechInspection.RowVersion
         };
 
@@ -41,10 +41,10 @@ public class CertificateTechInspectionExtentions : BaseMapper<CertificateTechIns
 
         certTechInspection.CertificateTechInspectionId = certTechInspectionDto.CertificateTechInspectionId;
         certTechInspection.VehicleId = certTechInspectionDto.VehicleId;
-        certTechInspection.CertificateTechInspectionNum = certTechInspectionDto.CertificateTechInspectionNum;
-        certTechInspection.CertificateTechInspectionIssuedBy = certTechInspectionDto.CertificateTechInspectionIssuedBy;
-        certTechInspection.CertificateTechInspectionIssueDate = certTechInspectionDto.CertificateTechInspectionIssueDate;
-        certTechInspection.CertificateTechInspectionExpDate = certTechInspectionDto.CertificateTechInspectionExpDate;
+        certTechInspection.Number = certTechInspectionDto.Number;
+        certTechInspection.IssuedBy = certTechInspectionDto.IssuedBy;
+        certTechInspection.IssueDate = certTechInspectionDto.IssueDate;
+        certTechInspection.ExpDate = certTechInspectionDto.ExpDate;
         certTechInspection.RowVersion = certTechInspectionDto.RowVersion;
 
         return Result<CertificateTechInspection>.Success(certTechInspection);

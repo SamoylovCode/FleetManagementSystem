@@ -27,8 +27,7 @@ public class UserServiceTests
             userAddValidator: null,
             validator: null,
             loginValidator: null,
-            userManager: null
-            );
+            userManager: null);
 
         // Act
         var result = await sut.GetUserByIdAsync(userId: " ");

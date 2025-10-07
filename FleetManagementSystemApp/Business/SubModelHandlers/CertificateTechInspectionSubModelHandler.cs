@@ -66,16 +66,16 @@ public class CertificateTechInspectionSubModelHandler : ISubModelHandler
         {
             _logger.Information("Returning certificate of periodic technical inspection DTO for vehicle {VehicleId}", vehicleId);
 
-            var periodString = _dateRangeParser.GetPeriodDates(сertificateTechInspectionDto.CertificateTechInspectionIssueDate.ToString() ?? string.Empty, сertificateTechInspectionDto.CertificateTechInspectionExpDate.ToString() ?? string.Empty);
+            var periodString = _dateRangeParser.GetPeriodDates(сertificateTechInspectionDto.IssueDate.ToString() ?? string.Empty, сertificateTechInspectionDto.ExpDate.ToString() ?? string.Empty);
 
             var certificateTechInspectionVm = new CertificateTechInspectionViewModel
             {
                 CertificateTechInspectionId = сertificateTechInspectionDto.CertificateTechInspectionId,
                 VehicleId = сertificateTechInspectionDto.VehicleId,
-                CertificateTechInspectionNum = сertificateTechInspectionDto.CertificateTechInspectionNum,
-                CertificateTechInspectionIssuedBy = сertificateTechInspectionDto.CertificateTechInspectionIssuedBy,
-                CertificateTechInspectionIssueDate = сertificateTechInspectionDto.CertificateTechInspectionIssueDate,
-                CertificateTechInspectionExpDate = сertificateTechInspectionDto.CertificateTechInspectionExpDate,
+                Number = сertificateTechInspectionDto.Number,
+                IssuedBy = сertificateTechInspectionDto.IssuedBy,
+                IssueDate = сertificateTechInspectionDto.IssueDate,
+                ExpDate = сertificateTechInspectionDto.ExpDate,
                 RowVersion = сertificateTechInspectionDto.RowVersion,
                 PeriodString = periodString,
             };
@@ -103,10 +103,10 @@ public class CertificateTechInspectionSubModelHandler : ISubModelHandler
         {
             CertificateTechInspectionId = CertificateTechInspectionVm.CertificateTechInspectionId,
             VehicleId = CertificateTechInspectionVm.VehicleId,
-            CertificateTechInspectionNum = CertificateTechInspectionVm.CertificateTechInspectionNum,
-            CertificateTechInspectionIssuedBy = CertificateTechInspectionVm.CertificateTechInspectionIssuedBy,
-            CertificateTechInspectionIssueDate = startDate,
-            CertificateTechInspectionExpDate = endDate,
+            Number = CertificateTechInspectionVm.Number,
+            IssuedBy = CertificateTechInspectionVm.IssuedBy,
+            IssueDate = startDate,
+            ExpDate = endDate,
             RowVersion = CertificateTechInspectionVm.RowVersion
         };
 

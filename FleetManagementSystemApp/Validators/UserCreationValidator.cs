@@ -11,12 +11,12 @@ public class UserCreationValidator : AbstractValidator<(ApplicationUser user, st
 {
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ICurrentUserService _currentUserService;
 
-    public UserCreationValidator(RoleManager<IdentityRole> roleManager, ICurrentUserService currentUserService, UserManager<ApplicationUser> userManager)
+    public UserCreationValidator(
+        RoleManager<IdentityRole> roleManager,
+        UserManager<ApplicationUser> userManager)
     {
         _roleManager = roleManager;
-        _currentUserService = currentUserService;
         _userManager = userManager;
 
         RuleFor(x => x.user).NotEmpty().WithMessage("Не указан пользователь.");

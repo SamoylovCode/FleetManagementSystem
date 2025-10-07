@@ -60,7 +60,6 @@ public class VehiclesController : Controller
 
     [HttpPost("create")]
     [ValidateParamsFilter] // TODO: добавить в остальные методы с параметрами, которые необходимо проверить
-    [ValidateAntiForgeryToken]
     [Authorize(Roles = "admin, manager")]
     public async Task<IActionResult> Create(VehiclePageViewModel viewModel)
     {
@@ -100,7 +99,11 @@ public class VehiclesController : Controller
     {
         ViewData["ReturnUrl"] = returnUrl;
 
-        var resultAggregateVm = await _aggregateModelService.BuildAggregateViewModelAsync(new VehiclePageViewModel { VehicleId = vehicleId });
+        var resultAggregateVm = await _aggregateModelService.BuildAggregateViewModelAsync(
+            new VehiclePageViewModel
+            {
+                VehicleId = vehicleId
+            });
 
         return await resultAggregateVm.ToActionResultAsync(
             onSuccess: () =>
@@ -122,7 +125,6 @@ public class VehiclesController : Controller
     // Обновляет ТС, вызывается из формы Edit.cshtml
     [HttpPost("{vehicleId}/edit")]
     [Authorize(Roles = "admin, manager")]
-    [ValidateAntiForgeryToken]
     [ActionName("Edit")]
     public async Task<IActionResult> Update(VehiclePageViewModel viewModel, string? returnUrl = null)
     {
@@ -186,7 +188,6 @@ public class VehiclesController : Controller
 
     [HttpPost]
     [Authorize(Roles = "admin, manager")]
-    [ValidateAntiForgeryToken]
     [Route("delete/{vehicleId}/confirm")]
     public async Task<IActionResult> DeleteConfirmed(VehicleRemoveViewModel viewModel)
     {

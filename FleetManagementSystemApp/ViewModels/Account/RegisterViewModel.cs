@@ -46,8 +46,8 @@ public class RegisterViewModel
     [Display(Name = "Название организации")]
     public string CompanyName { get; set; } = string.Empty;
 
-    [RegularExpression(@"^\+[1-9]\d{3}[-]?\d{3}[-]?\d{4}$")]
-    [StringLength(18, MinimumLength = 12, ErrorMessage = "Номер телефона должен состоять из 11 цифр")]
+    //[RegularExpression(@"^\+[1-9]\d{3}[-]?\d{3}[-]?\d{4}$")]
+    //[StringLength(18, MinimumLength = 12, ErrorMessage = "Номер телефона должен состоять из 11 цифр")]
     [Display(Name = "Телефон")]
     [Phone]
     public string PhoneNum { get; set; } = string.Empty;

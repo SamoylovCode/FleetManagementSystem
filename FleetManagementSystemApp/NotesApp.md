@@ -1,9 +1,47 @@
 ﻿# Docker
+Запуск двух docker-compose: docker-compose и docker-compose.dev
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+Опция --force-recreate в команде docker-compose up заставляет Docker Compose пересоздать контейнеры, даже если их конфигурация или образ не изменился
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate app
+
+Аналогично для остановки
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
+
+Сборка конкретно приложения
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up app -d
+
+Флаг -v удаляет именованные тома, определённые в compose файлах 
+
+Запуск без кэша
+docker-compose build --no-cache
+
 Пересобрать образ:
-docker compose up -d --build
+docker-compose up -d --build
 
 Запуск только Redis:
-docker compose up -d redis
+docker-compose up -d redis
+
+Удаление всех контейнеров
+docker system prune -a
+
+Удаление всех томов
+docker volume prune
+
+Удаление конкретного контейнера
+docker rm <контейнер>
+
+Просмотр переменных окружения
+docker exec -it fleet-app sh -c "printenv"
+
+Вход в контейнер
+docker exec -it <контейнер> sh
+
+Вывод списка файлов, которые содержатся в контейнере (после входа в контейнер)
+ls -la
+
+Просмотр содержимого файла, который содержится в контейнере
+cat <название_файла>
 
 # Redis
 PM> PACKAGE MANAGE CONSOLE:
@@ -92,3 +130,9 @@ class="form-control-plaintext" readonly
 Глобальные списки vehicles:list                           Кэш списков транспортных средств          Константа VehiclesList
 Другие сущности   user:by-id:123e4567...                  Выборка пользователей по ID/email         Константы UserById, UserByEmail
                   user:by-email:user@...
+
+
+# Очистить кэш NuGet
+dotnet nuget locals all --clear
+dotnet restore
+dotnet build

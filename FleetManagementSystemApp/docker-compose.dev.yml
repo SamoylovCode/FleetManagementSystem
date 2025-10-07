@@ -1,0 +1,78 @@
+# Переопределение сервиса 'app' из основного docker-compose.yml
+services:
+  app:
+    # Допускается использовать тот же образ, что и в prod, или собирать его заново при необходимости
+
+    # Раскомментировать, если нужно собирать отдельный dev-образ
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: mcr.microsoft.com/dotnet/sdk:9.0
+    container_name: fleet-app-dev # Новое имя контейнера для dev
+    depends_on:
+      mssql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5000:8080"
+    environment:
+      # Переопределение среды для локальной разработки
+      - ASPNETCORE_ENVIRONMENT=Development
+      # Переменные для подключения к внешним сервисам (Redis, MSSQL) через сеть compose, которые уже есть в основном compose, они переопределятся или добавятся
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+      - DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
+      # ConnectionStrings__DefaultConnection будет взят из env файла или переменной окружения
+      # DB_SA_PASSWORD задан в .env файле
+      - ConnectionStrings__DefaultConnection=Server=mssql;Database=aspnet-FleetManagementSystemApp-b06106aa-c919-492c-8ae6-5f3fb3ea9957;User=sa;Password=${DB_SA_PASSWORD};TrustServerCertificate=true;Encrypt=false;MultipleActiveResultSets=true
+      - ConnectionStrings__Redis=redis:6379,abortConnect=false,connectRetry=10,connectTimeout=5000,syncTimeout=5000
+      # Переменные для тестирования email рассылок (Mailtrap)
+      - MAILTRAP_USERNAME=${MAILTRAP_USERNAME}
+      - MAILTRAP_PASSWORD=${MAILTRAP_PASSWORD}
+      - DataProtection__KeysPath=/keys
+      - DataProtection__AppName=FleetManagementSystemApp
+    # Сопоставление локальной папки с исходниками с папкой в контейнере
+    volumes:
+      # Копирование исходного кода из локальной директории в /source внутри контейнера. Это позволяет изменениям в коде на ПК отражаться в контейнере
+      - .:/source:rw # rw - read/write
+      # appsettings.Development.json также будет доступен через volume mount. Если он находится в корне проекта (рядом с .csproj), он появится в /source в контейнере. ASP.NET Core будет искать appsettings.Development.json в рабочей директории или рядом с исполняемым файлом. При запуске через dotnet watch run из /source, он найдет его там
+      - dp-keys:/app/keys
+      - nuget-packages:/root/.nuget/packages
+    working_dir: /source # Устанавливаем рабочую директорию в контейнере на /source, где лежат исходники и appsettings.Development.json
+    # Команда для запуска приложения с отслеживанием изменений
+    command: >
+      sh -c "
+        dotnet restore &&
+        dotnet watch run --no-restore --project FleetManagementSystemApp.csproj --urls=http://0.0.0.0:8080"
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - SA_PASSWORD=${DB_SA_PASSWORD}
+      - ACCEPT_EULA=Y
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost,1433", "-U", "sa", "-P", "${DB_SA_PASSWORD}", "-C", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  mssql-data:
+  dp-keys:
+  nuget-packages:

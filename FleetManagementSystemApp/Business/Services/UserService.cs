@@ -252,13 +252,13 @@ public class UserService : IUserService
             return Result.Failure(UserServiceErrors.PasswordDoesNotMatch(user.Id));
         }
 
-        var isEmailConfirmed = await _userManager.IsEmailConfirmedAsync(user);
+        //var isEmailConfirmed = await _userManager.IsEmailConfirmedAsync(user);
 
-        if (!isEmailConfirmed)
-        {
-            _logger.Log(UserServiceErrors.EmailNotConfirmed(user.Id));
-            return Result.Failure(UserServiceErrors.EmailNotConfirmed(user.Id));
-        }
+        //if (!isEmailConfirmed)
+        //{
+        //    _logger.Log(UserServiceErrors.EmailNotConfirmed(user.Id));
+        //    return Result.Failure(UserServiceErrors.EmailNotConfirmed(user.Id));
+        //}
 
         await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
 
@@ -436,6 +436,14 @@ public class UserService : IUserService
 
         if (!createResult.Succeeded)
         {
+            // DEBUG
+            //foreach(var error in createResult.Errors)
+            //{
+            //    _logger.Error("Detailed errors: {Error}", error);
+            //}
+            //var details = string.Join("; ", createResult.Errors.Select(e => $"{e.Code}:{e.Description}"));
+            //_logger.Error("User creation failed: {Details}", details);
+
             _logger.Log(UserServiceErrors.UserCreationFailed(), Levels.Error);
             return Result.Failure(UserServiceErrors.UserCreationFailed());
         }

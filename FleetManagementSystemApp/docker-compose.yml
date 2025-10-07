@@ -1,22 +1,49 @@
 services:
   redis:
-    image: redis:7.2
-    container_name: local-redis
+    image: redis:7.2-alpine  # Redis из Docker Hub
+    container_name: fleet-redis
     ports:
-      - "6379:6379"
-    restart: always
+      - "6379:6379"  # Порт для доступа к Redis с хоста
+    networks:
+      - app-network
+    restart: unless-stopped  # Автоматический перезапуск при падении
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: fleet-mssql
+    environment:
+      - ACCEPT_EULA=Y  # Лицензионное соглашение
+      - SA_PASSWORD=${DB_SA_PASSWORD}
+      - MSSQL_PID=Express  # Бесплатная версия SQL Server
+    ports:
+      - "1433:1433"  # Порт для доступа к MSSQL с хоста
+    volumes:
+      - mssql-data:/var/opt/mssql  # Постоянное хранилище для данных БД
+    networks:
+      - app-network
+    restart: unless-stopped # Автоматический перезапуск при падении
 
   app:
-    image: my-mvc-app
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: mvc-app
-    depends_on:
+    image: fleet-app  # Имя образа приложения
+    container_name: fleet-app
+    depends_on:  # Зависимость от запуска сервисов:
       - redis
+      - mssql
     ports:
-      - "5000:80"
+      - "5000:8080"  # Пробрасывание порта 5000 хоста на порт 8080 контейнера
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - MAILTRAP_USERNAME=${MAILTRAP_USERNAME}
       - MAILTRAP_PASSWORD=${MAILTRAP_PASSWORD}
+      - ConnectionStrings__DefaultConnection=Server=mssql;Database=aspnet-FleetManagementSystemApp-b06106aa-c919-492c-8ae6-5f3fb3ea9957;User=sa;Password=${DB_SA_PASSWORD};TrustServerCertificate=true;  # Server=mssql - используемое имя сервиса из docker-compose, TrustServerCertificate=true - без проверки сертификата
+      - ConnectionStrings__Redis=redis:6379
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  mssql-data:  # Именованный том для хранения данных БД
+
+networks:
+  app-network:
+    driver: bridge  # Сеть для связи между контейнерами
