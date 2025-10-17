@@ -416,5 +416,9 @@ appsettings.Production.json
 /wwwroot/lib/bootstrap-icons/
 /FleetManagementSystemApp/wwwroot/lib
 
+# htpasswd для Nginx (dev/prod)
+/FleetManagementSystemApp/deploy/*/nginx/auth/htpasswd
+
 /FleetManagementSystemApp/best_practices.md
 /FleetManagementSystemApp/Shortkeys.md
+/FleetManagementSystemApp/deploy/README.md

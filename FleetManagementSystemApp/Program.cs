@@ -122,7 +122,6 @@ builder.Services.AddDataProtection()
     .SetApplicationName("FleetManagementSystemApp")
     .PersistKeysToFileSystem(new DirectoryInfo("/app/keys/")) // For Linux
     .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
-    //.PersistKeysToFileSystem(new DirectoryInfo(@"C:\keys\"))
     //.UseEphemeralDataProtectionProvider(); // <-- ИСПОЛЬЗОВАТЬ ТОЛЬКО ДЛЯ РАЗРАБОТКИ!
 builder.Services.AddAntiforgery(o =>
 {
@@ -165,6 +164,7 @@ builder.Services
     });
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHealthChecks();
 builder.Services.AddRazorPages();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -221,7 +221,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -241,6 +240,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapRazorPages();
+app.MapHealthChecks("/health");
 
 // Initialization of data
 using (var scope = app.Services.CreateScope())

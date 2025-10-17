@@ -12,9 +12,6 @@ WORKDIR /source
 COPY FleetManagementSystemApp.csproj ./
 RUN dotnet restore "FleetManagementSystemApp.csproj"
 
-# Копирование production-файла конфигурации
-COPY appsettings.Production.json ./
-
 # Копирование всего кода из текущей папки
 # . — это всё содержимое текущей директории на хосте (вне контейнера), откуда запускается сборка Docker-образа
 # ./ — это целевая директория в контейнере, то есть текущая рабочая директория, которая установлена через WORKDIR /source
@@ -32,12 +29,17 @@ RUN dotnet publish "FleetManagementSystemApp.csproj" -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
+# Установка утилит для healthcheck (wget) и обновление сертификатов
+# wget используется в healthcheck контейнера приложения в docker-compose.yml. Если его нет, healthcheck будет падать.
+# --no-install-recommends уменьшает размер образа, а очистка списков apt уменьшает слой.
+RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # Копирование опубликованного приложения
 # --from=<имя_предыдущего_этапа> <путь> — указывает, откуда копировать; build — это имя предыдущего этапа (stage) в многоэтапной сборке Docker (multi-stage build); /app/publish — путь в файловой системе образа build, откуда нужно взять файлы
 COPY --from=build /app/publish ./
 
-# Копирование файлов конфигурации
-COPY --from=build /source/appsettings.Production.json ./
+# Конфигурации уже включены в артефакты публикации (dotnet publish) — appsettings*.json копируются автоматически
 
 # Установка переменных окружения по умолчанию для продакшена
 ENV ASPNETCORE_ENVIRONMENT=Production

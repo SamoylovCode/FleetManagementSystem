@@ -4,7 +4,6 @@ using FleetManagementSystemApp.Business.Services.Abstract;
 using FleetManagementSystemApp.Business.Services.Errors;
 using FleetManagementSystemApp.Common;
 using FleetManagementSystemApp.Common.Extensions;
-using FleetManagementSystemApp.Data;
 using FleetManagementSystemApp.Data.Entities;
 using FleetManagementSystemApp.Infrastructure.Caching;
 using Microsoft.EntityFrameworkCore;
@@ -18,20 +17,17 @@ public class VehicleDataAggregator : IVehicleDataAggregator
 {
     private readonly IHybridCache _hybridCache;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger _logger;
     private readonly IVehicleService _vehicleService;
 
     public VehicleDataAggregator(
         IHybridCache hybridCache,
         IServiceProvider serviceProvider,
-        ApplicationDbContext dbContext,
         ILogger logger,
         IVehicleService vehicleService)
     {
         _hybridCache = hybridCache;
         _serviceProvider = serviceProvider;
-        _dbContext = dbContext;
         _logger = logger;
         _vehicleService = vehicleService;
     }

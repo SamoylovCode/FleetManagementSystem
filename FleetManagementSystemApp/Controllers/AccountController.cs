@@ -161,7 +161,12 @@ public class AccountController : Controller
                 onFailure: async (errors) =>
                 {
                     _logger.Error("Error confirming email for user {TargetUserId}. Errors: {@Errors}.", userId, errors);
-                    return View("Error", new ErrorViewModel { Description = ErCodes.EmailConfirmedFailed(userId).UserDescription! });
+                    return View(
+                        "Error",
+                        new ErrorViewModel
+                        {
+                            Description = ErCodes.EmailConfirmedFailed(userId).UserDescription!
+                        });
                 });
         }
     }
@@ -172,10 +177,12 @@ public class AccountController : Controller
         if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
         {
             _logger.Error("User ID {TargetUserId} or token {Token} not provided to set password.", userId, token);
-            return View("Error", new ErrorViewModel
-            {
-                Description = "Идентификатор пользователя или токен не переданы, чтобы назначить пароль учетной записи."
-            });
+            return View(
+                "Error",
+                new ErrorViewModel
+                {
+                    Description = "Идентификатор пользователя или токен не переданы, чтобы назначить пароль учетной записи."
+                });
         }
 
         return View("SetPassword", new SetPassword { UserId = userId, Token = token });

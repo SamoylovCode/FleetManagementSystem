@@ -1,0 +1,149 @@
+# =============================
+# PROD docker-compose для FleetManagementSystemApp
+# Единственная внешняя точка входа: nginx:80
+# Все остальные сервисы доступны только внутри сети Docker
+# Включены healthchecks и ротация логов json-file
+# =============================
+
+networks:
+  backend:
+    driver: bridge
+
+# Базовые опции логирования для ротации docker-логов
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+volumes:
+  mssql-data: {}
+  dp-keys: {} # Хранилище ключей Data Protection для ASP.NET Core
+  seq-data: {} # Данные Seq
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: fms_nginx
+    ports:
+      - "80:80" # единственная точка входа извне (HTTP)
+    volumes:
+      # Конфигурация nginx с проксированием на приложение и Seq
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Файл паролей для basic-auth (/seq). В проде рекомендуется передавать через секреты CI/CD
+      - ./nginx/auth/htpasswd:/etc/nginx/auth/htpasswd:ro
+    depends_on:
+      app:
+        condition: service_healthy
+      seq:
+        condition: service_healthy
+    healthcheck:
+      # Проверяем только сам nginx, не завися от доступности приложения
+      test: ["CMD-SHELL", "wget -q -O- http://localhost/healthz || exit 1"]
+      interval: 20s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+  app:
+    # Рекомендуется указывать реестр образов через переменные окружения в CI/CD
+    # Пример: IMAGE_REGISTRY=ghcr.io/your-org IMAGE_NAME=fleet-app IMAGE_TAG=latest
+    # Тогда итоговый образ: ${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+    image: ${IMAGE_REGISTRY:-local}/${IMAGE_NAME:-fleet-app}:${IMAGE_TAG:-latest}
+    container_name: fms_app
+    environment:
+      # ASP.NET Core будет слушать только внутри контейнера (порт не публикуется наружу)
+      ASPNETCORE_URLS: "http://0.0.0.0:8080"
+      ASPNETCORE_ENVIRONMENT: "Production"
+      # Строка подключения передается через переменные окружения
+      ConnectionStrings__DefaultConnection: "Server=db;Database=aspnet-FleetManagementSystemApp-b06106aa-c919-492c-8ae6-5f3fb3ea9957;User Id=sa;Password=${DB_SA_PASSWORD};TrustServerCertificate=true"
+      ConnectionStrings__Redis: "redis:6379"
+      # Email (пример: Mailtrap)
+      MAILTRAP_USERNAME: ${MAILTRAP_USERNAME}
+      MAILTRAP_PASSWORD: ${MAILTRAP_PASSWORD}
+    expose:
+      - "8080" # доступно только внутри сети
+    volumes:
+      # Ключи защиты данных (используются аутентификацией/куками)
+      - dp-keys:/app/keys
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/health || exit 1"]
+      interval: 20s
+      timeout: 3s
+      retries: 5
+      start_period: 25s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      seq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+  seq:
+    image: datalust/seq:latest
+    container_name: fms_seq
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINPASSWORD: "${SEQ_ADMIN_PASSWORD}" # Задается через секреты CI/CD; используется при первом старте пустого тома
+    expose:
+      - "80" # UI для nginx внутри сети
+    volumes:
+      - seq-data:/data # сохраняем данные Seq между перезапусками
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: fms_db
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${DB_SA_PASSWORD}" # берется из .env (локально) или переменных CI/CD (прод)
+      MSSQL_PID: "Express" # бесплатная редакция
+    expose:
+      - "1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      # TCP-проверка порта 1433 без зависимости от sqlcmd
+      test: ["CMD-SHELL", "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/1433' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: fms_redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"] # без персистентности в проде (меняйте по требованиям)
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend

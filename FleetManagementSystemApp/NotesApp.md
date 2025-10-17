@@ -43,6 +43,14 @@ ls -la
 Просмотр содержимого файла, который содержится в контейнере
 cat <название_файла>
 
+Перезапустите Nginx
+docker compose -f deploy/dev/docker-compose.yml restart nginx
+
+Смена пароля в prod (текущий пароль 'Old!Pass1', новый 'NewStrong!2')
+docker exec -it mssql_container /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost,1433 -U sa -P 'Old!Pass1' -C \
+  -Q "ALTER LOGIN [sa] WITH PASSWORD='NewStrong!2';"
+
 # Redis
 PM> PACKAGE MANAGE CONSOLE:
 docker ps /* вывод всех запущенных контейнеров с названием redis (<redis-name>) */
@@ -100,6 +108,11 @@ ______________________________________________
 # Identity
 
 Все вызовы Generate*TokenAsync → Confirm*Async должны быть до любых операций, меняющих пароль или профиль.
+Любое изменение данных пользователя (пароль, email и т.д.) автоматически генерирует новый SecurityStamp. Все ранее выданные токены были привязаны к старому SecurityStamp и мгновенно становятся недействительными.
+
+Поэтому цепочка должна быть:
+Генерация токена → Использование токена
+Без каких-либо других операций с пользователем между этими шагами.
 
 ______________________________________________
 

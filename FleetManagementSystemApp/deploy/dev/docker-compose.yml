@@ -1,0 +1,157 @@
+# =============================
+# DEV docker-compose для FleetManagementSystemApp
+# Единственная внешняя точка входа: nginx:80
+# Все остальные сервисы доступны только внутри сети Docker
+# Включены healthchecks и ротация логов json-file
+# В dev разрешена локальная сборка приложения из Dockerfile
+# =============================
+
+networks:
+  backend:
+    driver: bridge
+
+# Базовые опции логирования для ротации docker-логов
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+volumes:
+  mssql-data: {}
+  dp-keys: {} # Хранилище ключей Data Protection для ASP.NET Core
+  seq-data: {} # Данные Seq
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: fms_nginx_dev
+    ports:
+      - "80:80" # единственная точка входа извне (HTTP)
+    volumes:
+      # Конфигурация nginx с проксированием на приложение и Seq
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Локальный файл паролей basic-auth для /seq
+      - ./nginx/auth/htpasswd:/etc/nginx/auth/htpasswd:ro
+    depends_on:
+      app:
+        condition: service_healthy
+      seq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost/healthz || exit 1"]
+      interval: 20s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+  app:
+    build:
+      context: ../..
+      dockerfile: ./Dockerfile
+    image: fms_app_dev:latest
+    container_name: fms_app_dev
+    environment:
+      ASPNETCORE_URLS: "http://0.0.0.0:8080"
+      ASPNETCORE_ENVIRONMENT: "Development"
+      # Можно переопределить строку подключения через .env
+      ConnectionStrings__DefaultConnection: "Server=db;Database=aspnet-FleetManagementSystemApp-b06106aa-c919-492c-8ae6-5f3fb3ea9957;User Id=sa;Password=${DB_SA_PASSWORD:-ChangeMeStrong!1};TrustServerCertificate=true"
+      ConnectionStrings__Redis: "redis:6379"
+      # Переменные для проверки в StartupChecks — обязательны для старта приложения
+      MAILTRAP_USERNAME: "${MAILTRAP_USERNAME}"
+      MAILTRAP_PASSWORD: "${MAILTRAP_PASSWORD}"
+      # EmailSettings передаются через переменные окружения, чтобы не зависеть от appsettings*.json в Docker-контексте
+      EmailSettings__SmtpServer: "sandbox.smtp.mailtrap.io"
+      EmailSettings__Port: "587"
+      EmailSettings__SenderEmail: "noreply@example.com"
+      # Конфигурация Serilog через переменные окружения (перекрывает appsettings*.json)
+      Serilog__Using__0: "Serilog.Sinks.Console"
+      Serilog__Using__1: "Serilog.Sinks.Seq"
+      Serilog__WriteTo__0__Name: "Console"
+      Serilog__WriteTo__1__Name: "Seq"
+      Serilog__WriteTo__1__Args__serverUrl: "http://seq:80"
+    expose:
+      - "8080" # доступно только внутри сети
+    volumes:
+      # Ключи защиты данных (используются аутентификацией/куками)
+      - dp-keys:/app/keys
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/health || exit 1"]
+      interval: 20s
+      timeout: 3s
+      retries: 5
+      start_period: 25s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+  seq:
+    image: datalust/seq:latest
+    container_name: fms_seq_dev
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINPASSWORD: "${SEQ_ADMIN_PASSWORD:-Strong!Pass123}" # Пароль admin для первого запуска Seq (fallback для dev)
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "false" # Включаем встроенную аутентификацию Seq в dev; basic-auth Nginx остаётся поверх
+    expose:
+      - "80" # UI для nginx внутри сети
+    volumes:
+      - seq-data:/data # сохраняем данные Seq между перезапусками
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost/ || curl -fsS http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: fms_db_dev
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${DB_SA_PASSWORD:-ChangeMeStrong!1}"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      # Используем bash и /dev/tcp для TCP-check. Если порт закрыт — команда вернёт ошибку и healthcheck провалится.
+      test: ["CMD-SHELL", "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/1433' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: fms_redis_dev
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
